@@ -1,0 +1,39 @@
+{
+    "debug": true,
+    "process": {
+        "file_limit": 1000000,
+        "core_limit": 1000000000
+    },
+    "log": {
+        "path": "/home/ubuntu/log/readhistory",
+        "flag": "fatal,error,warn,info,debug,trace",
+        "num": 10
+    },
+    "alert": {
+        "host": "readhistory",
+        "addr": "127.0.0.1:4444"
+    },
+    "svr": {
+        "bind": [
+            "tcp@0.0.0.0:7424",
+            "udp@0.0.0.0:7424"
+        ],
+        "buf_limit": 100,
+        "max_pkg_size": 1000000,
+        "heartbeat_check": false
+    },
+    "db_history": {
+        "host": "localhost",
+        "user": "root",
+        "pass": "123",
+        "name": "history"
+    },
+    "db_log": {
+        "host": "localhost",
+        "user": "root",
+        "pass": "123",
+        "name": "log"
+    },
+    "worker_num": 10,
+    "daily_time": 1800
+}
