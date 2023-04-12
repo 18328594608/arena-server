@@ -172,7 +172,7 @@ log_info("## break ##");
         const char* symbol = configs.symbols[pos].name;
 //log_info("## [%d].symbol = %s ##", pos, symbol);
         if (json_object_get(list, symbol) == NULL) {
-log_info("## continue-11 ##");
+//log_info("## continue-11 ##");
             continue;
 	}
 
@@ -181,7 +181,7 @@ log_info("## continue-11 ##");
         mpd_copy(bid, symbol_bid(symbol), &mpd_ctx);
         if (mpd_cmp(bid, mpd_zero, &mpd_ctx) <= 0) {
             mpd_del(bid);
-log_info("## continue-22 ##");
+//log_info("## continue-22 ##");
             continue;
         }
 

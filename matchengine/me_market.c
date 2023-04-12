@@ -2805,8 +2805,6 @@ int market_tpsl_hedged(market_t *m, uint64_t order_id)
 
     // 0-不变，1-buy累减，2-sell累加，3-变sell单边，4-变buy单边
     int action = 0;
-log_info("## cur_margin1 = %s", mpd_to_sci(cur_margin, 0));
-
     if (cmp > 0) {
         // 2.1 buy单边
         // sell:  cm, M
@@ -2834,9 +2832,6 @@ log_info("## cur_margin1 = %s", mpd_to_sci(cur_margin, 0));
                 }
                 skiplist_release_iterator(it);
             }
-
-log_info("## buy temp = %s", mpd_to_sci(temp, 0));
-log_info("## buy update_margin = %s", mpd_to_sci(update_margin, 0));
 
             if (mpd_cmp(temp, mpd_zero, &mpd_ctx) < 0)
                 action = 3;
@@ -2873,9 +2868,6 @@ log_info("## buy update_margin = %s", mpd_to_sci(update_margin, 0));
                 skiplist_release_iterator(it);
             }
 
-log_info("## sell temp = %s", mpd_to_sci(temp, 0));
-log_info("## sell update_margin = %s", mpd_to_sci(update_margin, 0));
-
             if (mpd_cmp(temp, mpd_zero, &mpd_ctx) < 0)
                 action = 2;
             else
@@ -2884,10 +2876,6 @@ log_info("## sell update_margin = %s", mpd_to_sci(update_margin, 0));
             mpd_del(temp);
         }
     }
-
-log_info("## action = %d", action);
-log_info("## cur_margin2 = %s", mpd_to_sci(cur_margin, 0));
-log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
 
     // 2.3 更新保证金
     if (action == 1) {
@@ -2921,7 +2909,6 @@ log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
         market_set_margin(m, sid, cur_margin);
     }
 
-log_info("## cur_margin3 = %s", mpd_to_sci(cur_margin, 0));
     mpd_del(update_margin);
 
     // 3.update profit
@@ -3029,7 +3016,7 @@ int market_stop_out_hedged(market_t *m, uint64_t sid, order_t *order, const char
 
     // 0-不变，1-buy累减，2-sell累加，3-变sell单边，4-变buy单边
     int action = 0;
-log_info("## cur_margin1 = %s", mpd_to_sci(cur_margin, 0));
+//log_info("## cur_margin1 = %s", mpd_to_sci(cur_margin, 0));
 
     if (cmp > 0) {
         // 2.1 buy单边
@@ -3059,8 +3046,8 @@ log_info("## cur_margin1 = %s", mpd_to_sci(cur_margin, 0));
                 skiplist_release_iterator(it);
             }
 
-log_info("## buy temp = %s", mpd_to_sci(temp, 0));
-log_info("## buy update_margin = %s", mpd_to_sci(update_margin, 0));
+//log_info("## buy temp = %s", mpd_to_sci(temp, 0));
+//log_info("## buy update_margin = %s", mpd_to_sci(update_margin, 0));
 
             if (mpd_cmp(temp, mpd_zero, &mpd_ctx) < 0)
                 action = 3;
@@ -3097,8 +3084,8 @@ log_info("## buy update_margin = %s", mpd_to_sci(update_margin, 0));
                 skiplist_release_iterator(it);
             }
 
-log_info("## sell temp = %s", mpd_to_sci(temp, 0));
-log_info("## sell update_margin = %s", mpd_to_sci(update_margin, 0));
+//log_info("## sell temp = %s", mpd_to_sci(temp, 0));
+//log_info("## sell update_margin = %s", mpd_to_sci(update_margin, 0));
 
             if (mpd_cmp(temp, mpd_zero, &mpd_ctx) < 0)
                 action = 2;
@@ -3109,9 +3096,9 @@ log_info("## sell update_margin = %s", mpd_to_sci(update_margin, 0));
         }
     }
 
-log_info("## action = %d", action);
-log_info("## cur_margin2 = %s", mpd_to_sci(cur_margin, 0));
-log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
+//log_info("## action = %d", action);
+//log_info("## cur_margin2 = %s", mpd_to_sci(cur_margin, 0));
+//log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
 
     // 2.3 更新保证金
     if (action == 1) {
@@ -3145,7 +3132,7 @@ log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
         market_set_margin(m, sid, cur_margin);
     }
 
-log_info("## cur_margin3 = %s", mpd_to_sci(cur_margin, 0));
+//log_info("## cur_margin3 = %s", mpd_to_sci(cur_margin, 0));
     mpd_del(update_margin);
 
     // 3.update profit

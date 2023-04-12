@@ -75,7 +75,7 @@ static void flush_log(void)
     sql = sdscatprintf(sql, "INSERT INTO `%s` (`id`, `time`, `detail`) VALUES ", table);
     sdsfree(table);
 
-    size_t count;
+    size_t count = 0;
     char buf[10240];
     list_node *node;
     list_iter *iter = list_get_iterator(list, LIST_START_HEAD);
@@ -84,11 +84,13 @@ static void flush_log(void)
         size_t detail_len = strlen(log->detail);
         mysql_real_escape_string(mysql_conn, buf, log->detail, detail_len);
         sql = sdscatprintf(sql, "(%"PRIu64", %f, '%s')", log->id, log->create_time, buf);
-        if (list_len(list) > 1) {
+        if (list_len(list) > 1 && count < 999) {
             sql = sdscatprintf(sql, ", ");
         }
         list_del(list, node);
         count++;
+	if (count > 999)
+            break;
     }
     list_release_iterator(iter);
     nw_job_add(job, 0, sql);
