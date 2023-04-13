@@ -5,12 +5,12 @@
 
 # include "ut_ws_cli.h"
 
-struct ev_loop *nw_default_loop;
+struct ev_loop *nw_default_loop2;
 
 ws_cli *ws_cli_create(const char *url, void *open, void* message, void *error, void *close)
 {
     int ping_interval = 10;
-    ws_cli *cli = uwsc_new(nw_default_loop, url, ping_interval, NULL);
+    ws_cli *cli = uwsc_new(nw_default_loop2, url, ping_interval, NULL);
     if (!cli)
         return NULL;
 
