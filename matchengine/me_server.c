@@ -19,6 +19,78 @@ struct cache_val {
     json_t      *result;
 };
 
+int get_weekday(int timezone_offset) {
+    time_t current_time;
+    struct tm *tm_info;
+    time(&current_time);
+
+    // 获取UTC时间并加上时区偏移量
+    time_t utc_time = current_time + (8 - timezone_offset) * 3600;
+
+    tm_info = gmtime(&utc_time);
+    // 转换为本地时间并获取当前是星期几
+    time_t local_time = mktime(tm_info);
+    tm_info = localtime(&local_time);
+    return tm_info->tm_wday;
+}
+static bool is_time_in_range(const char *time_str, const char *range_str);
+
+static bool check_time_in_range(const char *time_range, int timezone_offset) {
+    char range_copy[strlen(time_range) + 1];
+    strcpy(range_copy, time_range);
+
+    char *range_parts[20];
+    int range_count = 0;
+
+    // 按 '|' 字符分隔时间区间
+    char *range_part = strtok(range_copy, "|");
+    while (range_part != NULL && range_count < 20) {
+        range_parts[range_count++] = range_part;
+        range_part = strtok(NULL, "|");
+    }
+
+    // 检查当前时间是否在任何时间区间内y
+    time_t current_time = time(NULL) - (8 - timezone_offset) * 3600;;
+    struct tm *tm = localtime(&current_time);
+    char time_str[6];
+    strftime(time_str, sizeof(time_str), "%H:%M", tm);
+
+    for (int i = 0; i < range_count; i++) {
+        if (is_time_in_range(time_str, range_parts[i])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// 检查给定时间是否在给定的时间范围内
+static bool is_time_in_range(const char *time_str, const char *range_str) {
+    int start_hour, start_minute, end_hour, end_minute;
+    if (sscanf(range_str, "%d:%d-%d:%d", &start_hour, &start_minute, &end_hour, &end_minute) != 4) {
+        return false;
+    }
+
+    int time_hour, time_minute;
+    if (sscanf(time_str, "%d:%d", &time_hour, &time_minute) != 2) {
+        return false;
+    }
+
+    int start_time = start_hour * 60 + start_minute;
+    int end_time = end_hour * 60 + end_minute;
+    int time = time_hour * 60 + time_minute;
+
+    if (end_time < start_time) {
+        // 时间范围跨越了午夜，需要调整结束时间和当前时间
+        end_time += 24 * 60;
+        if (time < start_time) {
+            time += 24 * 60;
+        }
+    }
+
+    return time >= start_time && time <= end_time;
+}
+
 static int reply_json(nw_ses *ses, rpc_pkg *pkg, const json_t *json)
 {
     char *message_data;
@@ -72,6 +144,11 @@ static int reply_error_internal_error(nw_ses *ses, rpc_pkg *pkg)
 static int reply_error_service_unavailable(nw_ses *ses, rpc_pkg *pkg)
 {
     return reply_error(ses, pkg, 3, "service unavailable");
+}
+
+static int reply_error_is_time_out(nw_ses *ses, rpc_pkg *pkg)
+{
+    return reply_error(ses, pkg, 20, "market is close");
 }
 
 static int reply_result(nw_ses *ses, rpc_pkg *pkg, json_t *result)
@@ -630,6 +707,61 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     if (market == NULL)
         return reply_error_invalid_argument(ses, pkg);
 
+    bool time_in_range = false;
+    for (int i = 0; i < configs.symbol_num; ++i) {
+        if(strcmp(configs.symbols[i].name, symbol) == 0)
+        {
+
+           int week =  get_weekday(settings.gmt_time);
+            switch (week) {
+                case 1:
+                {
+                   const char* monday =  configs.symbols[i].monday;
+                   time_in_range =  check_time_in_range(monday, settings.gmt_time);
+                    break;
+                }
+                case 2: {
+                    const char* tuesday =  configs.symbols[i].tuesday;
+                    time_in_range =  check_time_in_range(tuesday, settings.gmt_time);
+                }
+                case 3: {
+                    const char* wednesday =  configs.symbols[i].wednesday;
+                    time_in_range =  check_time_in_range(wednesday, settings.gmt_time);
+                    break;
+                }
+                case 4: {
+                    const char* thursday =  configs.symbols[i].thursday;
+                    time_in_range =  check_time_in_range(thursday, settings.gmt_time);
+                    break;
+                }
+                case 5: {
+                    const char* friday =  configs.symbols[i].friday;
+                    time_in_range =  check_time_in_range(friday, settings.gmt_time);
+                    break;
+                }
+                default:
+                {
+                    const char* monday =  configs.symbols[i].monday;
+                    const char* tuesday =  configs.symbols[i].tuesday;
+                    const char* wednesday =  configs.symbols[i].wednesday;
+                    const char* thursday =  configs.symbols[i].thursday;
+                    const char* friday =  configs.symbols[i].friday;
+                    if (strlen(monday) == 0 && strlen(tuesday) == 0 && strlen(wednesday) == 0
+                        &&strlen(thursday) == 0 && strlen(friday) == 0) {
+                        time_in_range = false;
+                    } else {
+                        time_in_range = true;
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    if (!time_in_range)
+    {
+      return  reply_error_is_time_out(ses, pkg);
+    }
     // side
     if (!json_is_integer(json_array_get(params, 3)))
         return reply_error_invalid_argument(ses, pkg);

@@ -70,6 +70,11 @@ struct symbol {
     char            *margin_symbol;
     char            *profit_symbol;
     int             swap_calc;
+    char            *monday;
+    char            *tuesday;
+    char            *wednesday;
+    char            *thursday;
+    char            *friday;
     mpd_t           *c; // c = contract_size / 100
 };
 

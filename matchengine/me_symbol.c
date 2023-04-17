@@ -153,7 +153,9 @@ static int load_group_from_db(MYSQL *conn)
 static int load_symbol_from_db(MYSQL *conn)
 {
     sds sql = sdsempty();
-    sql = sdscatprintf(sql, "SELECT `symbol`, `security`, `digit`, `currency`, `contract_size`, `percentage`, `margin_calc`, `profit_calc`, `swap_calc`, `tick_size`, `tick_price` FROM symbol");
+    sql = sdscatprintf(sql,"SELECT `symbol`, `security`, `digit`, `currency`, `contract_size`, `percentage`, `margin_calc`, `profit_calc`, `swap_calc`, `tick_size`, `tick_price` , `monday`, `tuesday`, `wednesday`, `thursday`, `friday` FROM symbol");
+    //sql = sdscatprintf(sql, "SELECT `symbol`, `security`, `digit`, `currency`, `contract_size`, `percentage`, `margin_calc`, `profit_calc`, `swap_calc`, `tick_size`, `tick_price` FROM symbol");
+
     log_trace("exec sql: %s", sql);
     int ret = mysql_real_query(conn, sql, sdslen(sql));
     if (ret != 0) {
@@ -176,6 +178,13 @@ static int load_symbol_from_db(MYSQL *conn)
         MYSQL_ROW row = mysql_fetch_row(result);
         const char *name = row[0];
         const char *currency = row[3];
+
+        const char *monday = row[11];
+        const char *tuesday = row[12];
+        const char *wednesday = row[13];
+        const char *thursday = row[14];
+        const char *friday = row[15];
+
         uint32_t margin_calc = atoi(row[6]);
         uint32_t profit_calc = atoi(row[7]);
 
@@ -191,7 +200,11 @@ static int load_symbol_from_db(MYSQL *conn)
         configs.symbols[i].swap_calc = atoi(row[8]);
         configs.symbols[i].tick_size = decimal(row[9], PREC_DEFAULT);
         configs.symbols[i].tick_price = decimal(row[10], PREC_DEFAULT);
-
+        configs.symbols[i].monday = strdup(monday);
+        configs.symbols[i].tuesday = strdup(tuesday);
+        configs.symbols[i].wednesday = strdup(wednesday);
+        configs.symbols[i].thursday = strdup(thursday);
+        configs.symbols[i].friday = strdup(friday);
         // c = contract_size / 100
         mpd_div(configs.symbols[i].c, configs.symbols[i].c, hundred, &mpd_ctx);
 

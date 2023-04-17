@@ -5,12 +5,12 @@
         "core_limit": 1000000000
     },
     "log": {
-        "path": "/home/ubuntu/log/matchengine",
+        "path": "/home/parallels/workspace/test/log",
         "flag": "fatal,error,warn,info,debug,trace",
         "num": 10
     },
     "tick_log": {
-        "path": "/home/ubuntu/log/tick",
+        "path": "/home/parallels/workspace/test/log",
         "flag": "info",
         "num": 10
     },
@@ -71,5 +71,6 @@
     "slice_interval": 3600,
     "slice_keeptime": 259200,
     "stop_out": "0.3",
+    "gmt_time":4,
     "tick_svr": "wss://stream-live.btcdana.vip/uuid=arena"
 }
