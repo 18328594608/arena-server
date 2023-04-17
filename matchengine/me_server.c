@@ -618,53 +618,7 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
         return reply_error_invalid_argument(ses, pkg);
 
     bool time_in_range = false;
-    for (int i = 0; i < configs.symbol_num; ++i) {
-        if (strcmp(configs.symbols[i].name, symbol) == 0) {
-
-            int week = get_weekday(settings.gmt_time);
-            switch (week) {
-                case 1: {
-                    const char *monday = configs.symbols[i].monday;
-                    time_in_range = check_time_in_range(monday, settings.gmt_time);
-                    break;
-                }
-                case 2: {
-                    const char *tuesday = configs.symbols[i].tuesday;
-                    time_in_range = check_time_in_range(tuesday, settings.gmt_time);
-                }
-                case 3: {
-                    const char *wednesday = configs.symbols[i].wednesday;
-                    time_in_range = check_time_in_range(wednesday, settings.gmt_time);
-                    break;
-                }
-                case 4: {
-                    const char *thursday = configs.symbols[i].thursday;
-                    time_in_range = check_time_in_range(thursday, settings.gmt_time);
-                    break;
-                }
-                case 5: {
-                    const char *friday = configs.symbols[i].friday;
-                    time_in_range = check_time_in_range(friday, settings.gmt_time);
-                    break;
-                }
-                default: {
-                    const char *monday = configs.symbols[i].monday;
-                    const char *tuesday = configs.symbols[i].tuesday;
-                    const char *wednesday = configs.symbols[i].wednesday;
-                    const char *thursday = configs.symbols[i].thursday;
-                    const char *friday = configs.symbols[i].friday;
-                    if (strlen(monday) == 0 && strlen(tuesday) == 0 && strlen(wednesday) == 0
-                        && strlen(thursday) == 0 && strlen(friday) == 0) {
-                        time_in_range = false;
-                    } else {
-                        time_in_range = true;
-                    }
-                    break;
-                }
-            }
-            break;
-        }
-    }
+    time_in_range = symbol_check_time_in_range(symbol);
     if (!time_in_range) {
         return reply_error_is_time_out(ses, pkg);
     }
@@ -891,54 +845,10 @@ static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     if (!json_is_string(json_array_get(params, 1)))
         return reply_error_invalid_argument(ses, pkg);
     const char *symbol = json_string_value(json_array_get(params, 1));
-    bool time_in_range = false;
-    for (int i = 0; i < configs.symbol_num; ++i) {
-        if (strcmp(configs.symbols[i].name, symbol) == 0) {
 
-            int week = get_weekday(settings.gmt_time);
-            switch (week) {
-                case 1: {
-                    const char *monday = configs.symbols[i].monday;
-                    time_in_range = check_time_in_range(monday, settings.gmt_time);
-                    break;
-                }
-                case 2: {
-                    const char *tuesday = configs.symbols[i].tuesday;
-                    time_in_range = check_time_in_range(tuesday, settings.gmt_time);
-                }
-                case 3: {
-                    const char *wednesday = configs.symbols[i].wednesday;
-                    time_in_range = check_time_in_range(wednesday, settings.gmt_time);
-                    break;
-                }
-                case 4: {
-                    const char *thursday = configs.symbols[i].thursday;
-                    time_in_range = check_time_in_range(thursday, settings.gmt_time);
-                    break;
-                }
-                case 5: {
-                    const char *friday = configs.symbols[i].friday;
-                    time_in_range = check_time_in_range(friday, settings.gmt_time);
-                    break;
-                }
-                default: {
-                    const char *monday = configs.symbols[i].monday;
-                    const char *tuesday = configs.symbols[i].tuesday;
-                    const char *wednesday = configs.symbols[i].wednesday;
-                    const char *thursday = configs.symbols[i].thursday;
-                    const char *friday = configs.symbols[i].friday;
-                    if (strlen(monday) == 0 && strlen(tuesday) == 0 && strlen(wednesday) == 0
-                        && strlen(thursday) == 0 && strlen(friday) == 0) {
-                        time_in_range = false;
-                    } else {
-                        time_in_range = true;
-                    }
-                    break;
-                }
-            }
-            break;
-        }
-    }
+    //check open close time
+    bool time_in_range = false;
+    time_in_range = symbol_check_time_in_range(symbol);
     if (!time_in_range) {
         return reply_error_is_time_out(ses, pkg);
     }

@@ -90,6 +90,50 @@ static void fee_dict_val_free(void *val)
     free(val);
 }
 
+static dict_t *dict_week;
+
+struct week_type {
+    char            *monday;
+    char            *tuesday;
+    char            *wednesday;
+    char            *thursday;
+    char            *friday;
+};
+
+static uint32_t week_dict_hash_function(const void *key)
+{
+    return dict_generic_hash_function(key, strlen(key));
+}
+
+static void *week_dict_key_dup(const void *key)
+{
+    return strdup(key);
+}
+
+static void *week_dict_val_dup(const void *val)
+{
+    struct week_type *obj = malloc(sizeof(struct week_type));
+    if (obj == NULL)
+        return NULL;
+    memcpy(obj, val, sizeof(struct week_type));
+    return obj;
+}
+
+static int week_dict_key_compare(const void *key1, const void *key2)
+{
+    return strcmp(key1, key2);
+}
+
+static void week_dict_key_free(void *key)
+{
+    free(key);
+}
+
+static void week_dict_val_free(void *val)
+{
+    free(val);
+}
+
 static int init_dict(void)
 {
     dict_types type;
@@ -118,6 +162,18 @@ static int init_dict(void)
     if (dict_fee == NULL)
         return -__LINE__;
 
+    dict_types week_dt;
+    memset(&week_dt, 0, sizeof(week_dt));
+    week_dt.hash_function  = week_dict_hash_function;
+    week_dt.key_compare    = week_dict_key_compare;
+    week_dt.key_dup        = week_dict_key_dup;
+    week_dt.key_destructor = week_dict_key_free;
+    week_dt.val_dup        = week_dict_val_dup;
+    week_dt.val_destructor = week_dict_val_free;
+
+    dict_week = dict_create(&week_dt, 64);
+    if (dict_week == NULL)
+        return -__LINE__;
     return 0;
 }
 
@@ -322,6 +378,15 @@ static struct fee_type *get_fee_type(const char *group, const char *symbol)
     return entry->val;
 }
 
+static struct week_type *get_week_type(const char *symbol)
+{
+    dict_entry *entry = dict_find(dict_week, symbol);
+    if (entry == NULL)
+        return NULL;
+
+    return entry->val;
+}
+
 int group_leverage(const char *group)
 {
     struct group_type *at = get_group_type(group);
@@ -350,6 +415,35 @@ mpd_t* symbol_swap_short(const char *group, const char *symbol)
 {
     struct fee_type *at = get_fee_type(group, symbol);
     return at ? at->swap_short : mpd_zero;
+}
+
+const char* week_monday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->monday : "";
+}
+
+const char* week_tuesday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->tuesday : "";
+}
+
+const char* week_wednesday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->wednesday : "";
+}
+const char* week_thursday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->thursday : "";
+}
+
+const char* week_friday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->friday : "";
 }
 
 int get_weekday(int timezone_offset) {
@@ -423,6 +517,53 @@ bool check_time_in_range(const char *time_range, int timezone_offset) {
     return time >= start_time && time <= end_time;
 }
 
+bool symbol_check_time_in_range(const char *symbol_str)
+{
+    bool time_in_range = false;
+    int week = get_weekday(settings.gmt_time);
+    switch (week) {
+        case 1: {
+            const char *monday = week_monday(symbol_str);
+            time_in_range = check_time_in_range(monday, settings.gmt_time);
+            break;
+        }
+        case 2: {
+            const char *tuesday = week_thursday(symbol_str);
+            time_in_range = check_time_in_range(tuesday, settings.gmt_time);
+        }
+        case 3: {
+            const char *wednesday = week_wednesday(symbol_str);
+            time_in_range = check_time_in_range(wednesday, settings.gmt_time);
+            break;
+        }
+        case 4: {
+            const char *thursday = week_thursday(symbol_str);
+            time_in_range = check_time_in_range(thursday, settings.gmt_time);
+            break;
+        }
+        case 5: {
+            const char *friday = week_friday(symbol_str);
+            time_in_range = check_time_in_range(friday, settings.gmt_time);
+            break;
+        }
+        default: {
+            const char *monday = week_monday(symbol_str);
+            const char *tuesday = week_thursday(symbol_str);
+            const char *wednesday = week_wednesday(symbol_str);
+            const char *thursday = week_thursday(symbol_str);
+            const char *friday = week_friday(symbol_str);
+            if (strlen(monday) == 0 && strlen(tuesday) == 0 && strlen(wednesday) == 0
+                && strlen(thursday) == 0 && strlen(friday) == 0) {
+                time_in_range = false;
+            } else {
+                time_in_range = true;
+            }
+            break;
+        }
+    }
+    return time_in_range;
+}
+
 int init_symbol(void)
 {
     ERR_RET(init_dict());
@@ -473,7 +614,27 @@ int init_symbol(void)
         if (dict_add(dict_fee, key, &ft) == NULL)
             return -__LINE__;
     }
+    for (int i = 0; i < configs.symbol_num; ++i) {
+        struct week_type wt;
+        wt.monday = malloc(strlen(configs.symbols[i].monday) + 1);
+        wt.tuesday = malloc(strlen(configs.symbols[i].tuesday) + 1);
+        wt.wednesday = malloc(strlen(configs.symbols[i].wednesday) + 1);
+        wt.thursday = malloc(strlen(configs.symbols[i].thursday) + 1);
+        wt.friday = malloc(strlen(configs.symbols[i].friday) + 1);
 
+        if (wt.monday == NULL || wt.tuesday == NULL ||
+            wt.wednesday == NULL || wt.thursday == NULL || wt.friday == NULL) {
+            exit(1);
+        }
+
+        strcpy(wt.monday, configs.symbols[i].monday);
+        strcpy(wt.tuesday, configs.symbols[i].tuesday);
+        strcpy(wt.wednesday, configs.symbols[i].wednesday);
+        strcpy(wt.thursday, configs.symbols[i].thursday);
+        strcpy(wt.friday, configs.symbols[i].friday);
+        if (dict_add(dict_week, configs.symbols[i].name, &wt) == NULL)
+            return -__LINE__;
+    }
     return 0;
 
 cleanup:

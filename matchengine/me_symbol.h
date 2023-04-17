@@ -96,6 +96,7 @@ int group_leverage(const char *group);
 int get_weekday(int timezone_offset);
 bool is_time_in_range(const char *time_str, const char *range_str);
 bool check_time_in_range(const char *time_range, int timezone_offset);
+bool symbol_check_time_in_range(const char *symbol_str);
 
 mpd_t* symbol_percentage(const char *group, const char *symbol);
 mpd_t* symbol_fee(const char *group, const char *symbol);
