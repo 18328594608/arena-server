@@ -462,6 +462,11 @@ int get_weekday(int timezone_offset) {
 }
 
 bool check_time_in_range(const char *time_range, int timezone_offset) {
+    if (strlen(time_range) == 0)
+    {
+        return true;
+    }
+
     char range_copy[strlen(time_range) + 1];
     strcpy(range_copy, time_range);
 
@@ -554,9 +559,9 @@ bool symbol_check_time_in_range(const char *symbol_str)
             const char *friday = week_friday(symbol_str);
             if (strlen(monday) == 0 && strlen(tuesday) == 0 && strlen(wednesday) == 0
                 && strlen(thursday) == 0 && strlen(friday) == 0) {
-                time_in_range = false;
-            } else {
                 time_in_range = true;
+            } else {
+                time_in_range = false;
             }
             break;
         }
