@@ -165,7 +165,7 @@ static void flush_list(void)
 
         // 防止死循环，遍历所有品种没有符合条件的
         if (from == pos) {
-log_info("## break ##");
+//log_info("## break ##");
             break;
         }
 
@@ -227,8 +227,8 @@ log_info("## break ##");
 
         json_object_del(list, symbol);
         count++;
-        // 暂时设置100的容量
-        uint64_t *sids = (uint64_t *) malloc(100 * sizeof(uint64_t));
+        // TODO 每次最多处理 10000 个帐号的风控
+        uint64_t *sids = (uint64_t *) malloc(10000 * sizeof(uint64_t));
         int total = 0;
         uint64_t sid = 0;
 
@@ -275,8 +275,8 @@ log_info("## break ##");
                 sids[total] = sid;
                 total++;
 
-                if (total > 99) {
-                    log_error("[stop out] total > 99");
+                if (total > 9999) {
+                    log_error("[stop out] total > 9999");
                     break;
                 }
             }
