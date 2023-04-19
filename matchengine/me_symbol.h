@@ -1,6 +1,7 @@
 # ifndef _ME_SYMBOL_H_
 # define _ME_SYMBOL_H_
 
+#include <stdbool.h>
 # include "ut_decimal.h"
 
 // Forex = lots * contract_size / leverage * percentage / 100
@@ -70,6 +71,11 @@ struct symbol {
     char            *margin_symbol;
     char            *profit_symbol;
     int             swap_calc;
+    char            *monday;
+    char            *tuesday;
+    char            *wednesday;
+    char            *thursday;
+    char            *friday;
     mpd_t           *c; // c = contract_size / 100
 };
 
@@ -87,6 +93,11 @@ typedef struct symbol symbol_t;
 
 int init_symbol(void);
 int group_leverage(const char *group);
+int get_weekday(int timezone_offset);
+bool is_time_in_range(const char *time_str, const char *range_str);
+bool check_time_in_range(const char *time_range, int timezone_offset);
+bool symbol_check_time_in_range(const char *symbol_str);
+
 mpd_t* symbol_percentage(const char *group, const char *symbol);
 mpd_t* symbol_fee(const char *group, const char *symbol);
 mpd_t* symbol_swap_long(const char *group, const char *symbol);

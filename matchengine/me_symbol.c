@@ -90,6 +90,50 @@ static void fee_dict_val_free(void *val)
     free(val);
 }
 
+static dict_t *dict_week;
+
+struct week_type {
+    char            *monday;
+    char            *tuesday;
+    char            *wednesday;
+    char            *thursday;
+    char            *friday;
+};
+
+static uint32_t week_dict_hash_function(const void *key)
+{
+    return dict_generic_hash_function(key, strlen(key));
+}
+
+static void *week_dict_key_dup(const void *key)
+{
+    return strdup(key);
+}
+
+static void *week_dict_val_dup(const void *val)
+{
+    struct week_type *obj = malloc(sizeof(struct week_type));
+    if (obj == NULL)
+        return NULL;
+    memcpy(obj, val, sizeof(struct week_type));
+    return obj;
+}
+
+static int week_dict_key_compare(const void *key1, const void *key2)
+{
+    return strcmp(key1, key2);
+}
+
+static void week_dict_key_free(void *key)
+{
+    free(key);
+}
+
+static void week_dict_val_free(void *val)
+{
+    free(val);
+}
+
 static int init_dict(void)
 {
     dict_types type;
@@ -118,6 +162,18 @@ static int init_dict(void)
     if (dict_fee == NULL)
         return -__LINE__;
 
+    dict_types week_dt;
+    memset(&week_dt, 0, sizeof(week_dt));
+    week_dt.hash_function  = week_dict_hash_function;
+    week_dt.key_compare    = week_dict_key_compare;
+    week_dt.key_dup        = week_dict_key_dup;
+    week_dt.key_destructor = week_dict_key_free;
+    week_dt.val_dup        = week_dict_val_dup;
+    week_dt.val_destructor = week_dict_val_free;
+
+    dict_week = dict_create(&week_dt, 64);
+    if (dict_week == NULL)
+        return -__LINE__;
     return 0;
 }
 
@@ -153,7 +209,9 @@ static int load_group_from_db(MYSQL *conn)
 static int load_symbol_from_db(MYSQL *conn)
 {
     sds sql = sdsempty();
-    sql = sdscatprintf(sql, "SELECT `symbol`, `security`, `digit`, `currency`, `contract_size`, `percentage`, `margin_calc`, `profit_calc`, `swap_calc`, `tick_size`, `tick_price` FROM symbol");
+    sql = sdscatprintf(sql,"SELECT `symbol`, `security`, `digit`, `currency`, `contract_size`, `percentage`, `margin_calc`, `profit_calc`, `swap_calc`, `tick_size`, `tick_price` , `monday`, `tuesday`, `wednesday`, `thursday`, `friday` FROM symbol");
+    //sql = sdscatprintf(sql, "SELECT `symbol`, `security`, `digit`, `currency`, `contract_size`, `percentage`, `margin_calc`, `profit_calc`, `swap_calc`, `tick_size`, `tick_price` FROM symbol");
+
     log_trace("exec sql: %s", sql);
     int ret = mysql_real_query(conn, sql, sdslen(sql));
     if (ret != 0) {
@@ -176,6 +234,13 @@ static int load_symbol_from_db(MYSQL *conn)
         MYSQL_ROW row = mysql_fetch_row(result);
         const char *name = row[0];
         const char *currency = row[3];
+
+        const char *monday = row[11];
+        const char *tuesday = row[12];
+        const char *wednesday = row[13];
+        const char *thursday = row[14];
+        const char *friday = row[15];
+
         uint32_t margin_calc = atoi(row[6]);
         uint32_t profit_calc = atoi(row[7]);
 
@@ -191,7 +256,11 @@ static int load_symbol_from_db(MYSQL *conn)
         configs.symbols[i].swap_calc = atoi(row[8]);
         configs.symbols[i].tick_size = decimal(row[9], PREC_DEFAULT);
         configs.symbols[i].tick_price = decimal(row[10], PREC_DEFAULT);
-
+        configs.symbols[i].monday = strdup(monday);
+        configs.symbols[i].tuesday = strdup(tuesday);
+        configs.symbols[i].wednesday = strdup(wednesday);
+        configs.symbols[i].thursday = strdup(thursday);
+        configs.symbols[i].friday = strdup(friday);
         // c = contract_size / 100
         mpd_div(configs.symbols[i].c, configs.symbols[i].c, hundred, &mpd_ctx);
 
@@ -309,6 +378,15 @@ static struct fee_type *get_fee_type(const char *group, const char *symbol)
     return entry->val;
 }
 
+static struct week_type *get_week_type(const char *symbol)
+{
+    dict_entry *entry = dict_find(dict_week, symbol);
+    if (entry == NULL)
+        return NULL;
+
+    return entry->val;
+}
+
 int group_leverage(const char *group)
 {
     struct group_type *at = get_group_type(group);
@@ -337,6 +415,158 @@ mpd_t* symbol_swap_short(const char *group, const char *symbol)
 {
     struct fee_type *at = get_fee_type(group, symbol);
     return at ? at->swap_short : mpd_zero;
+}
+
+const char* week_monday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->monday : "";
+}
+
+const char* week_tuesday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->tuesday : "";
+}
+
+const char* week_wednesday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->wednesday : "";
+}
+const char* week_thursday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->thursday : "";
+}
+
+const char* week_friday(const char *symbol)
+{
+    struct week_type *at = get_week_type(symbol);
+    return at ? at->friday : "";
+}
+
+int get_weekday(int timezone_offset) {
+    time_t current_time;
+    struct tm *tm_info;
+    time(&current_time);
+
+    // 获取UTC时间并加上时区偏移量
+    time_t utc_time = current_time + (8 - timezone_offset) * 3600;
+
+    tm_info = gmtime(&utc_time);
+    // 转换为本地时间并获取当前是星期几
+    time_t local_time = mktime(tm_info);
+    tm_info = localtime(&local_time);
+    return tm_info->tm_wday;
+}
+
+bool check_time_in_range(const char *time_range, int timezone_offset) {
+    if (strlen(time_range) == 0)
+    {
+        return true;
+    }
+
+    char range_copy[strlen(time_range) + 1];
+    strcpy(range_copy, time_range);
+
+    char *range_parts[20];
+    int range_count = 0;
+
+    // 按 '|' 字符分隔时间区间
+    char *range_part = strtok(range_copy, "|");
+    while (range_part != NULL && range_count < 20) {
+        range_parts[range_count++] = range_part;
+        range_part = strtok(NULL, "|");
+    }
+
+    // 检查当前时间是否在任何时间区间内y
+    time_t current_time = time(NULL) - (8 - timezone_offset) * 3600;;
+    struct tm *tm = localtime(&current_time);
+    char time_str[6];
+    strftime(time_str, sizeof(time_str), "%H:%M", tm);
+
+    for (int i = 0; i < range_count; i++) {
+        if (is_time_in_range(time_str, range_parts[i])) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// 检查给定时间是否在给定的时间范围内
+ bool is_time_in_range(const char *time_str, const char *range_str) {
+    int start_hour, start_minute, end_hour, end_minute;
+    if (sscanf(range_str, "%d:%d-%d:%d", &start_hour, &start_minute, &end_hour, &end_minute) != 4) {
+        return false;
+    }
+
+    int time_hour, time_minute;
+    if (sscanf(time_str, "%d:%d", &time_hour, &time_minute) != 2) {
+        return false;
+    }
+
+    int start_time = start_hour * 60 + start_minute;
+    int end_time = end_hour * 60 + end_minute;
+    int time = time_hour * 60 + time_minute;
+
+    if (end_time < start_time) {
+        // 时间范围跨越了午夜，需要调整结束时间和当前时间
+        end_time += 24 * 60;
+        if (time < start_time) {
+            time += 24 * 60;
+        }
+    }
+
+    return time >= start_time && time <= end_time;
+}
+
+bool symbol_check_time_in_range(const char *symbol_str)
+{
+    bool time_in_range = false;
+    int week = get_weekday(settings.gmt_time);
+    switch (week) {
+        case 1: {
+            const char *monday = week_monday(symbol_str);
+            time_in_range = check_time_in_range(monday, settings.gmt_time);
+            break;
+        }
+        case 2: {
+            const char *tuesday = week_thursday(symbol_str);
+            time_in_range = check_time_in_range(tuesday, settings.gmt_time);
+        }
+        case 3: {
+            const char *wednesday = week_wednesday(symbol_str);
+            time_in_range = check_time_in_range(wednesday, settings.gmt_time);
+            break;
+        }
+        case 4: {
+            const char *thursday = week_thursday(symbol_str);
+            time_in_range = check_time_in_range(thursday, settings.gmt_time);
+            break;
+        }
+        case 5: {
+            const char *friday = week_friday(symbol_str);
+            time_in_range = check_time_in_range(friday, settings.gmt_time);
+            break;
+        }
+        default: {
+            const char *monday = week_monday(symbol_str);
+            const char *tuesday = week_thursday(symbol_str);
+            const char *wednesday = week_wednesday(symbol_str);
+            const char *thursday = week_thursday(symbol_str);
+            const char *friday = week_friday(symbol_str);
+            if (strlen(monday) == 0 && strlen(tuesday) == 0 && strlen(wednesday) == 0
+                && strlen(thursday) == 0 && strlen(friday) == 0) {
+                time_in_range = true;
+            } else {
+                time_in_range = false;
+            }
+            break;
+        }
+    }
+    return time_in_range;
 }
 
 int init_symbol(void)
@@ -389,7 +619,27 @@ int init_symbol(void)
         if (dict_add(dict_fee, key, &ft) == NULL)
             return -__LINE__;
     }
+    for (int i = 0; i < configs.symbol_num; ++i) {
+        struct week_type wt;
+        wt.monday = malloc(strlen(configs.symbols[i].monday) + 1);
+        wt.tuesday = malloc(strlen(configs.symbols[i].tuesday) + 1);
+        wt.wednesday = malloc(strlen(configs.symbols[i].wednesday) + 1);
+        wt.thursday = malloc(strlen(configs.symbols[i].thursday) + 1);
+        wt.friday = malloc(strlen(configs.symbols[i].friday) + 1);
 
+        if (wt.monday == NULL || wt.tuesday == NULL ||
+            wt.wednesday == NULL || wt.thursday == NULL || wt.friday == NULL) {
+            exit(1);
+        }
+
+        strcpy(wt.monday, configs.symbols[i].monday);
+        strcpy(wt.tuesday, configs.symbols[i].tuesday);
+        strcpy(wt.wednesday, configs.symbols[i].wednesday);
+        strcpy(wt.thursday, configs.symbols[i].thursday);
+        strcpy(wt.friday, configs.symbols[i].friday);
+        if (dict_add(dict_week, configs.symbols[i].name, &wt) == NULL)
+            return -__LINE__;
+    }
     return 0;
 
 cleanup:

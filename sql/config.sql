@@ -16,7 +16,12 @@ CREATE TABLE `symbol` (
     `profit_calc`   TINYINT UNSIGNED NOT NULL COMMENT '1-Forex 2-CFD 3-Futures',
     `swap_calc`     TINYINT UNSIGNED NOT NULL COMMENT '1-money 2-USD',
     `tick_size`     DECIMAL(10,2) NOT NULL,
-    `tick_price`    INT UNSIGNED NOT NULL
+    `tick_price`    INT UNSIGNED NOT NULL,
+    `monday`        VARCHAR(50) NOT NULL DEFAULT ,
+    `tuesday`       VARCHAR(50) NOT NULL DEFAULT ,
+    `wednesday`     VARCHAR(50) NOT NULL DEFAULT ,
+    `thursday`      VARCHAR(50) NOT NULL DEFAULT ,
+    `friday`        VARCHAR(50) NOT NULL DEFAULT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `fee` (

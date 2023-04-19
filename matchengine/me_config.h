@@ -85,6 +85,7 @@ struct settings {
 
     mpd_t               *stop_out;
     char                *tick_svr;
+    int                 gmt_time;
 };
 
 extern struct settings settings;

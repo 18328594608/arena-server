@@ -146,6 +146,12 @@ static int read_config_from_json(json_t *root)
         printf("load tick_svr fail: %d\n", ret);
         return -__LINE__;
     }
+
+    ret = read_cfg_int(root, "gmt_time", &settings.gmt_time, false, 0);
+    if (ret < 0) {
+        printf("load gmt_time fail: %d", ret);
+        return -__LINE__;
+    }
     ERR_RET_LN(read_cfg_mpd(root, "stop_out", &settings.stop_out, "0.3"));
 
     ERR_RET_LN(read_cfg_real(root, "cache_timeout", &settings.cache_timeout, false, 0.45));
