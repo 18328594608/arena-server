@@ -15,11 +15,12 @@ static dict_t *dict_cache;
 static nw_timer cache_timer;
 
 struct cache_val {
-    double time;
-    json_t *result;
+    double      time;
+    json_t      *result;
 };
 
-static int reply_json(nw_ses *ses, rpc_pkg *pkg, const json_t *json) {
+static int reply_json(nw_ses *ses, rpc_pkg *pkg, const json_t *json)
+{
     char *message_data;
     if (settings.debug) {
         message_data = json_dumps(json, JSON_INDENT(4));
@@ -41,7 +42,8 @@ static int reply_json(nw_ses *ses, rpc_pkg *pkg, const json_t *json) {
     return 0;
 }
 
-static int reply_error(nw_ses *ses, rpc_pkg *pkg, int code, const char *message) {
+static int reply_error(nw_ses *ses, rpc_pkg *pkg, int code, const char *message)
+{
     json_t *error = json_object();
     json_object_set_new(error, "code", json_integer(code));
     json_object_set_new(error, "message", json_string(message));
@@ -57,26 +59,31 @@ static int reply_error(nw_ses *ses, rpc_pkg *pkg, int code, const char *message)
     return ret;
 }
 
-static int reply_error_invalid_argument(nw_ses *ses, rpc_pkg *pkg) {
+static int reply_error_invalid_argument(nw_ses *ses, rpc_pkg *pkg)
+{
     return reply_error(ses, pkg, 1, "invalid argument");
 }
 
-static int reply_error_internal_error(nw_ses *ses, rpc_pkg *pkg) {
+static int reply_error_internal_error(nw_ses *ses, rpc_pkg *pkg)
+{
     return reply_error(ses, pkg, 2, "internal error");
 }
 
-static int reply_error_service_unavailable(nw_ses *ses, rpc_pkg *pkg) {
+static int reply_error_service_unavailable(nw_ses *ses, rpc_pkg *pkg)
+{
     return reply_error(ses, pkg, 3, "service unavailable");
 }
 
-static int reply_error_is_time_out(nw_ses *ses, rpc_pkg *pkg) {
+static int reply_error_market_close(nw_ses *ses, rpc_pkg *pkg)
+{
     return reply_error(ses, pkg, 20, "market is close");
 }
 
-static int reply_result(nw_ses *ses, rpc_pkg *pkg, json_t *result) {
+static int reply_result(nw_ses *ses, rpc_pkg *pkg, json_t *result)
+{
     json_t *reply = json_object();
     json_object_set_new(reply, "error", json_null());
-    json_object_set(reply, "result", result);
+    json_object_set    (reply, "result", result);
     json_object_set_new(reply, "id", json_integer(pkg->req_id));
 
     int ret = reply_json(ses, pkg, reply);
@@ -85,7 +92,8 @@ static int reply_result(nw_ses *ses, rpc_pkg *pkg, json_t *result) {
     return ret;
 }
 
-static int reply_success(nw_ses *ses, rpc_pkg *pkg) {
+static int reply_success(nw_ses *ses, rpc_pkg *pkg)
+{
     json_t *result = json_object();
     json_object_set_new(result, "status", json_string("success"));
 
@@ -94,7 +102,8 @@ static int reply_success(nw_ses *ses, rpc_pkg *pkg) {
     return ret;
 }
 
-static bool process_cache(nw_ses *ses, rpc_pkg *pkg, sds *cache_key) {
+static bool process_cache(nw_ses *ses, rpc_pkg *pkg, sds *cache_key)
+{
     sds key = sdsempty();
     key = sdscatprintf(key, "%u", pkg->command);
     key = sdscatlen(key, pkg->body, pkg->body_size);
@@ -117,7 +126,8 @@ static bool process_cache(nw_ses *ses, rpc_pkg *pkg, sds *cache_key) {
     return true;
 }
 
-static int add_cache(sds cache_key, json_t *result) {
+static int add_cache(sds cache_key, json_t *result)
+{
     struct cache_val cache;
     cache.time = current_timestamp();
     cache.result = result;
@@ -128,7 +138,8 @@ static int add_cache(sds cache_key, json_t *result) {
 }
 
 // group.list
-static int on_cmd_group_list(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_group_list(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     json_t *result = json_array();
     for (int i = 0; i < configs.group_num; ++i) {
         json_t *group = json_object();
@@ -142,7 +153,8 @@ static int on_cmd_group_list(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // symbol.list
-static int on_cmd_symbol_list(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_symbol_list(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     json_t *result = json_array();
     for (int i = 0; i < configs.symbol_num; ++i) {
         json_t *symbol = json_object();
@@ -192,7 +204,8 @@ static int on_cmd_symbol_list(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // tick.status
-static int on_cmd_tick_status(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_tick_status(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     json_t *result = json_object();
     int status = tick_status();
     json_object_set_new(result, "status", json_integer(tick_status()));
@@ -202,7 +215,8 @@ static int on_cmd_tick_status(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // balance.query (sid)
-static int on_cmd_balance_query_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_balance_query_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     size_t request_size = json_array_size(params);
     if (request_size != 1)
         return reply_error_invalid_argument(ses, pkg);
@@ -264,7 +278,8 @@ static int on_cmd_balance_query_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // balance.update (sid, change, comment)
-static int on_cmd_balance_update_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_balance_update_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 3)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -298,7 +313,8 @@ static int on_cmd_balance_update_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.open2 (sid, group, symbol, side, price, lot, tp, sl, comment, margin_price)
-static int on_cmd_order_open2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_open2(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 10)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -413,8 +429,7 @@ static int on_cmd_order_open2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     }
 
     json_t *result = NULL;
-    int ret = market_open_hedged(true, &result, market, get_symbol(symbol), sid, leverage, side, price, lot, tp, sl,
-                                 symbol_percentage(group, symbol), fee, swap, 0, comment, margin_price, 0);
+    int ret = market_open_hedged(true, &result, market, get_symbol(symbol), sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, 0, comment, margin_price, 0);
 
     mpd_del(price);
     mpd_del(lot);
@@ -441,7 +456,7 @@ static int on_cmd_order_open2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (price)
         mpd_del(price);
     if (lot)
@@ -461,7 +476,8 @@ static int on_cmd_order_open2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.position (sid)
-static int on_cmd_order_position(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_position(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 1)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -497,7 +513,8 @@ static int on_cmd_order_position(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.close2 (sid, symbol, order_id, price, comment, profit_price)
-static int on_cmd_order_close2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_close2(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 6)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -579,7 +596,7 @@ static int on_cmd_order_close2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (price)
         mpd_del(price);
     if (profit_price)
@@ -589,7 +606,8 @@ static int on_cmd_order_close2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.open (sid, group, symbol, side, lot, tp, sl, external, comment)
-static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 9)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -620,8 +638,9 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     bool time_in_range = false;
     time_in_range = symbol_check_time_in_range(symbol);
     if (!time_in_range) {
-        return reply_error_is_time_out(ses, pkg);
+        return reply_error_market_close(ses, pkg);
     }
+
     // side
     if (!json_is_integer(json_array_get(params, 3)))
         return reply_error_invalid_argument(ses, pkg);
@@ -658,7 +677,6 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     } else {
         mpd_copy(price, bid, &mpd_ctx);
     }
-    log_info("## price = %s", mpd_to_sci(price, 0));
 
     // tp
     if (!json_is_string(json_array_get(params, 5)))
@@ -757,7 +775,6 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
             }
         }
     }
-    log_info("## margin_price = %s", mpd_to_sci(margin_price, 0));
 
     // get symbol fee and swap
     mpd_copy(fee, symbol_fee(group, symbol), &mpd_ctx);
@@ -771,9 +788,7 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     double create_time = current_timestamp();
     json_t *result = NULL;
 //    int ret = market_open(true, &result, market, sym, sid, leverage, side, price, lot, tp, sl, fee, swap, external, comment, margin_price, create_time);
-    int ret = market_open_hedged(true, &result, market, sym, sid, leverage, side, price, lot, tp, sl,
-                                 symbol_percentage(group, symbol), fee, swap, external, comment, margin_price,
-                                 create_time);
+    int ret = market_open_hedged(true, &result, market, sym, sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, external, comment, margin_price, create_time);
 
     if (ret == 0) {
         // 添加参数 price, margin_time, create_time,系统重启时创建订单使用
@@ -808,7 +823,7 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (bid)
         mpd_del(bid);
     if (ask)
@@ -832,7 +847,8 @@ static int on_cmd_order_open(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.close (sid, symbol, order_id, comment)
-static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 4)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -846,11 +862,10 @@ static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
         return reply_error_invalid_argument(ses, pkg);
     const char *symbol = json_string_value(json_array_get(params, 1));
 
-    //check open close time
-    bool time_in_range = false;
-    time_in_range = symbol_check_time_in_range(symbol);
+    // check open close time
+    bool time_in_range = symbol_check_time_in_range(symbol);
     if (!time_in_range) {
-        return reply_error_is_time_out(ses, pkg);
+        return reply_error_market_close(ses, pkg);
     }
 
     market_t *market = get_market(symbol);
@@ -885,7 +900,6 @@ static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     } else {
         mpd_copy(price, symbol_ask(symbol), &mpd_ctx);
     }
-    log_info("## price = %s", mpd_to_sci(price, 0));
 
     // profit price
     mpd_copy(profit_price, mpd_one, &mpd_ctx);
@@ -925,7 +939,6 @@ static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
             }
         }
     }
-    log_info("## profit_price = %s", mpd_to_sci(profit_price, 0));
 
     double finish_time = current_timestamp();
     json_t *result = NULL;
@@ -956,7 +969,7 @@ static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (price)
         mpd_del(price);
     if (profit_price)
@@ -966,7 +979,8 @@ static int on_cmd_order_close(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.update (sid, symbol, order_id, tp, sl)
-static int on_cmd_order_update(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_update(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 5)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1070,7 +1084,7 @@ static int on_cmd_order_update(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (tp)
         mpd_del(tp);
     if (sl)
@@ -1084,7 +1098,8 @@ static int on_cmd_order_update(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.limit (sid, group, symbol, side, lot, price, tp, sl, expire, external, comment)
-static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 11)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1247,9 +1262,7 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 
     double create_time = current_timestamp();
     json_t *result = NULL;
-    int ret = market_put_limit(true, &result, market, sid, leverage, side, price, lot, tp, sl,
-                               symbol_percentage(group, symbol), fee, swap, external, comment, create_time,
-                               expire_time);
+    int ret = market_put_limit(true, &result, market, sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, external, comment, create_time, expire_time);
 
     if (ret == 0) {
         // 添加参数 create_time,系统重启时创建订单使用
@@ -1275,7 +1288,7 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (bid)
         mpd_del(bid);
     if (ask)
@@ -1299,7 +1312,8 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.pending (sid)
-static int on_cmd_order_pending(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_pending(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 1)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1335,7 +1349,8 @@ static int on_cmd_order_pending(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.cancel (sid, symbol, order_id, comment)
-static int on_cmd_order_cancel_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_cancel_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 4)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1387,7 +1402,8 @@ static int on_cmd_order_cancel_v2(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
 }
 
 // order.close_external (sid, symbol, external, comment)
-static int on_cmd_order_close_external(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_close_external(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 4)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1432,7 +1448,6 @@ static int on_cmd_order_close_external(nw_ses *ses, rpc_pkg *pkg, json_t *params
     } else {
         mpd_copy(price, symbol_ask(symbol), &mpd_ctx);
     }
-    log_info("## price = %s", mpd_to_sci(price, 0));
 
     // profit price
     mpd_copy(profit_price, mpd_one, &mpd_ctx);
@@ -1472,7 +1487,6 @@ static int on_cmd_order_close_external(nw_ses *ses, rpc_pkg *pkg, json_t *params
             }
         }
     }
-    log_info("## profit_price = %s", mpd_to_sci(profit_price, 0));
 
     double finish_time = current_timestamp();
     json_t *result = NULL;
@@ -1503,7 +1517,7 @@ static int on_cmd_order_close_external(nw_ses *ses, rpc_pkg *pkg, json_t *params
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (price)
         mpd_del(price);
     if (profit_price)
@@ -1513,7 +1527,8 @@ static int on_cmd_order_close_external(nw_ses *ses, rpc_pkg *pkg, json_t *params
 }
 
 // order.update_external (sid, symbol, external, tp, sl)
-static int on_cmd_order_update_external(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_update_external(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 5)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1616,7 +1631,7 @@ static int on_cmd_order_update_external(nw_ses *ses, rpc_pkg *pkg, json_t *param
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     if (tp)
         mpd_del(tp);
     if (sl)
@@ -1630,7 +1645,8 @@ static int on_cmd_order_update_external(nw_ses *ses, rpc_pkg *pkg, json_t *param
 }
 
 // order.cancel_external (sid, symbol, external, comment)
-static int on_cmd_order_cancel_external(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_cancel_external(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 4)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -1681,7 +1697,8 @@ static int on_cmd_order_cancel_external(nw_ses *ses, rpc_pkg *pkg, json_t *param
     return ret;
 }
 
-static int on_cmd_balance_query(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_balance_query(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     size_t request_size = json_array_size(params);
     if (request_size == 0)
         return reply_error_invalid_argument(ses, pkg);
@@ -1779,7 +1796,8 @@ static int on_cmd_balance_query(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     return ret;
 }
 
-static int on_cmd_balance_update(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_balance_update(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 6)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -2013,7 +2031,8 @@ invalid_argument:
 }
 */
 
-static int on_cmd_order_query(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_query(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 4)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -2075,7 +2094,8 @@ static int on_cmd_order_query(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     return ret;
 }
 
-static int on_cmd_order_cancel(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_cancel(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 3)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -2118,7 +2138,8 @@ static int on_cmd_order_cancel(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     return ret;
 }
 
-static int on_cmd_order_book(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_book(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 4)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -2187,7 +2208,8 @@ static int on_cmd_order_book(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     return ret;
 }
 
-static json_t *get_depth(market_t *market, size_t limit) {
+static json_t *get_depth(market_t *market, size_t limit)
+{
 /*
     mpd_t *price = mpd_new(&mpd_ctx);
     mpd_t *amount = mpd_new(&mpd_ctx);
@@ -2251,7 +2273,8 @@ static json_t *get_depth(market_t *market, size_t limit) {
     return result;
 }
 
-static json_t *get_depth_merge(market_t *market, size_t limit, mpd_t *interval) {
+static json_t *get_depth_merge(market_t* market, size_t limit, mpd_t *interval)
+{
 /*
     mpd_t *q = mpd_new(&mpd_ctx);
     mpd_t *r = mpd_new(&mpd_ctx);
@@ -2385,7 +2408,8 @@ static int on_cmd_order_book_depth(nw_ses *ses, rpc_pkg *pkg, json_t *params)
 }
 */
 
-static int on_cmd_order_detail(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_order_detail(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     if (json_array_size(params) != 2)
         return reply_error_invalid_argument(ses, pkg);
 
@@ -2415,7 +2439,8 @@ static int on_cmd_order_detail(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     return ret;
 }
 
-static int on_cmd_market_list(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_market_list(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     json_t *result = json_array();
     for (int i = 0; i < settings.market_num; ++i) {
         json_t *market = json_object();
@@ -2434,14 +2459,15 @@ static int on_cmd_market_list(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     return ret;
 }
 
-static json_t *get_market_summary(const char *name) {
+static json_t *get_market_summary(const char *name)
+{
     size_t ask_count;
     size_t bid_count;
     mpd_t *ask_amount = mpd_new(&mpd_ctx);
     mpd_t *bid_amount = mpd_new(&mpd_ctx);
     market_t *market = get_market(name);
     market_get_status(market, &ask_count, ask_amount, &bid_count, bid_amount);
-
+    
     json_t *obj = json_object();
     json_object_set_new(obj, "name", json_string(name));
     json_object_set_new(obj, "ask_count", json_integer(ask_count));
@@ -2455,7 +2481,8 @@ static json_t *get_market_summary(const char *name) {
     return obj;
 }
 
-static int on_cmd_market_summary(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
+static int on_cmd_market_summary(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
     json_t *result = json_array();
     if (json_array_size(params) == 0) {
         for (int i = 0; i < settings.market_num; ++i) {
@@ -2476,12 +2503,13 @@ static int on_cmd_market_summary(nw_ses *ses, rpc_pkg *pkg, json_t *params) {
     json_decref(result);
     return ret;
 
-    invalid_argument:
+invalid_argument:
     json_decref(result);
     return reply_error_invalid_argument(ses, pkg);
 }
 
-static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg) {
+static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg)
+{
     json_t *params = json_loadb(pkg->body, pkg->body_size, 0, NULL);
     if (params == NULL || !json_is_array(params)) {
         goto decode_error;
@@ -2490,200 +2518,184 @@ static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg) {
 
     int ret;
     switch (pkg->command) {
-        case CMD_BALANCE_QUERY:
-            log_trace("from: %s cmd balance query, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_balance_query_v2(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_balance_query %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_BALANCE_UPDATE:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd balance update, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_balance_update_v2(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_balance_update %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_GROUP_LIST:
-            log_trace("from: %s cmd group list, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_group_list(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_group_list %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_SYMBOL_LIST:
-            log_trace("from: %s cmd symbol list, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_symbol_list(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_symbol_list %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_TICK_STATUS:
-            log_trace("from: %s cmd tick status, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_tick_status(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_tick_status %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_OPEN:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order open, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_open(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_open %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_CLOSE:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order close, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_close(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_close %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_POSITION:
-            log_trace("from: %s cmd order position, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_position(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_position %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_OPEN2:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order open2, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_open2(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_open2 %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_CLOSE2:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order close2, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_close2(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_close2 %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_UPDATE:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order update, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_update(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_update %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_CLOSE_EXTERNAL:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order close external, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_close_external(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_close_external %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_UPDATE_EXTERNAL:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order update external, sequence: %u params: %s",
-                      nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
-            ret = on_cmd_order_update_external(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_update_external %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_CANCEL_EXTERNAL:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order cancel external, sequence: %u params: %s",
-                      nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
-            ret = on_cmd_order_cancel_external(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_cancel_external %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_LIMIT:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order limit, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_limit(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_limit %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_PENDING:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order pending, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_pending(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_pending %s fail: %d", params_str, ret);
-            }
-            break;
+    case CMD_BALANCE_QUERY:
+        log_trace("from: %s cmd balance query, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_balance_query_v2(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_balance_query %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_BALANCE_UPDATE:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd balance update, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_balance_update_v2(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_balance_update %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_GROUP_LIST:
+        log_trace("from: %s cmd group list, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_group_list(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_group_list %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_SYMBOL_LIST:
+        log_trace("from: %s cmd symbol list, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_symbol_list(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_symbol_list %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_TICK_STATUS:
+        log_trace("from: %s cmd tick status, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_tick_status(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_tick_status %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_OPEN:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order open, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_open(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_open %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_CLOSE:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order close, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_close(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_close %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_POSITION:
+        log_trace("from: %s cmd order position, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_position(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_position %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_OPEN2:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order open2, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_open2(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_open2 %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_CLOSE2:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order close2, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_close2(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_close2 %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_UPDATE:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order update, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_update(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_update %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_CLOSE_EXTERNAL:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order close external, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_close_external(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_close_external %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_UPDATE_EXTERNAL:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order update external, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_update_external(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_update_external %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_CANCEL_EXTERNAL:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order cancel external, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_cancel_external(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_cancel_external %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_LIMIT:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order limit, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_limit(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_limit %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_PENDING:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order pending, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_pending(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_pending %s fail: %d", params_str, ret);
+        }
+        break;
 /*
     case CMD_ORDER_PUT_LIMIT:
         if (is_operlog_block() || is_history_block() || is_message_block()) {
@@ -2712,36 +2724,33 @@ static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg) {
         }
         break;
 */
-        case CMD_ORDER_QUERY:
-            log_trace("from: %s cmd order query, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_query(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_query %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_CANCEL:
-            if (is_operlog_block() || is_history_block() || is_message_block()) {
-                log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
-                          is_operlog_block(), is_history_block(), is_message_block());
-                reply_error_service_unavailable(ses, pkg);
-                goto cleanup;
-            }
-            log_trace("from: %s cmd order cancel, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_cancel_v2(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_cancel %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_ORDER_BOOK:
-            log_trace("from: %s cmd order book, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_book(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_book %s fail: %d", params_str, ret);
-            }
-            break;
+    case CMD_ORDER_QUERY:
+        log_trace("from: %s cmd order query, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_query(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_query %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_CANCEL:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                    is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order cancel, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_cancel_v2(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_cancel %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_ORDER_BOOK:
+        log_trace("from: %s cmd order book, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_book(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_book %s fail: %d", params_str, ret);
+        }
+        break;
 /*
     case CMD_ORDER_BOOK_DEPTH:
         log_trace("from: %s cmd order book depth, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
@@ -2751,41 +2760,38 @@ static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg) {
         }
         break;
 */
-        case CMD_ORDER_DETAIL:
-            log_trace("from: %s cmd order detail, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_order_detail(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_order_detail %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_MARKET_LIST:
-            log_trace("from: %s cmd market list, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_market_list(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_market_list %s fail: %d", params_str, ret);
-            }
-            break;
-        case CMD_MARKET_SUMMARY:
-            log_trace("from: %s cmd market summary, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr),
-                      pkg->sequence, params_str);
-            ret = on_cmd_market_summary(ses, pkg, params);
-            if (ret < 0) {
-                log_error("on_cmd_market_summary%s fail: %d", params_str, ret);
-            }
-            break;
-        default:
-            log_error("from: %s unknown command: %u", nw_sock_human_addr(&ses->peer_addr), pkg->command);
-            break;
+    case CMD_ORDER_DETAIL:
+        log_trace("from: %s cmd order detail, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_detail(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_detail %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_MARKET_LIST:
+        log_trace("from: %s cmd market list, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_market_list(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_market_list %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_MARKET_SUMMARY:
+        log_trace("from: %s cmd market summary, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_market_summary(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_market_summary%s fail: %d", params_str, ret);
+        }
+        break;
+    default:
+        log_error("from: %s unknown command: %u", nw_sock_human_addr(&ses->peer_addr), pkg->command);
+        break;
     }
 
-    cleanup:
+cleanup:
     sdsfree(params_str);
     json_decref(params);
     return;
 
-    decode_error:
+decode_error:
     if (params) {
         json_decref(params);
     }
@@ -2798,47 +2804,57 @@ static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg) {
     return;
 }
 
-static void svr_on_new_connection(nw_ses *ses) {
+static void svr_on_new_connection(nw_ses *ses)
+{
     log_trace("new connection: %s", nw_sock_human_addr(&ses->peer_addr));
 }
 
-static void svr_on_connection_close(nw_ses *ses) {
+static void svr_on_connection_close(nw_ses *ses)
+{
     log_trace("connection: %s close", nw_sock_human_addr(&ses->peer_addr));
 }
 
-static uint32_t cache_dict_hash_function(const void *key) {
-    return dict_generic_hash_function(key, sdslen((sds) key));
+static uint32_t cache_dict_hash_function(const void *key)
+{
+    return dict_generic_hash_function(key, sdslen((sds)key));
 }
 
-static int cache_dict_key_compare(const void *key1, const void *key2) {
-    return sdscmp((sds) key1, (sds) key2);
+static int cache_dict_key_compare(const void *key1, const void *key2)
+{
+    return sdscmp((sds)key1, (sds)key2);
 }
 
-static void *cache_dict_key_dup(const void *key) {
-    return sdsdup((const sds) key);
+static void *cache_dict_key_dup(const void *key)
+{
+    return sdsdup((const sds)key);
 }
 
-static void cache_dict_key_free(void *key) {
+static void cache_dict_key_free(void *key)
+{
     sdsfree(key);
 }
 
-static void *cache_dict_val_dup(const void *val) {
+static void *cache_dict_val_dup(const void *val)
+{
     struct cache_val *obj = malloc(sizeof(struct cache_val));
     memcpy(obj, val, sizeof(struct cache_val));
     return obj;
 }
 
-static void cache_dict_val_free(void *val) {
+static void cache_dict_val_free(void *val)
+{
     struct cache_val *obj = val;
     json_decref(obj->result);
     free(val);
 }
 
-static void on_cache_timer(nw_timer *timer, void *privdata) {
+static void on_cache_timer(nw_timer *timer, void *privdata)
+{
     dict_clear(dict_cache);
 }
 
-int init_server(void) {
+int init_server(void)
+{
     rpc_svr_type type;
     memset(&type, 0, sizeof(type));
     type.on_recv_pkg = svr_on_recv_pkg;
@@ -2853,11 +2869,11 @@ int init_server(void) {
 
     dict_types dt;
     memset(&dt, 0, sizeof(dt));
-    dt.hash_function = cache_dict_hash_function;
-    dt.key_compare = cache_dict_key_compare;
-    dt.key_dup = cache_dict_key_dup;
+    dt.hash_function  = cache_dict_hash_function;
+    dt.key_compare    = cache_dict_key_compare;
+    dt.key_dup        = cache_dict_key_dup;
     dt.key_destructor = cache_dict_key_free;
-    dt.val_dup = cache_dict_val_dup;
+    dt.val_dup        = cache_dict_val_dup;
     dt.val_destructor = cache_dict_val_free;
 
     dict_cache = dict_create(&dt, 64);

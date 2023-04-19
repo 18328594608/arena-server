@@ -71,6 +71,6 @@
     "slice_interval": 3600,
     "slice_keeptime": 259200,
     "stop_out": "0.3",
-    "gmt_time":4,
-    "tick_svr": "wss://stream-live.btcdana.vip/uuid=arena"
+    "gmt_time": 3,
+    "tick_svr": "wss://loclhost/test"
 }

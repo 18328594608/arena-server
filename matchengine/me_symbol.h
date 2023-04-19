@@ -1,7 +1,7 @@
 # ifndef _ME_SYMBOL_H_
 # define _ME_SYMBOL_H_
 
-#include <stdbool.h>
+# include <stdbool.h>
 # include "ut_decimal.h"
 
 // Forex = lots * contract_size / leverage * percentage / 100

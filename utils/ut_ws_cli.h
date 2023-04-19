@@ -6,6 +6,7 @@
 # ifndef _UT_WS_CLI_H_
 # define _UT_WS_CLI_H_
 
+# include "nw_evt.h"
 # include "uwsc.h"
 
 typedef struct uwsc_client ws_cli; 
