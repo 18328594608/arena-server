@@ -86,7 +86,7 @@ int load_limits(MYSQL *conn, const char *table)
     while (true) {
         sds sql = sdsempty();
         sql = sdscatprintf(sql, "SELECT `id`, `sid`, `side`, `create_time`, `expire_time`, `symbol`, `comment`, "
-                "`price`, `lot`, `margin`, `fee`, `swap`, `tp`, `sl`, `external` FROM `%s` "
+                "`price`, `lot`, `margin`, `fee`, `swap`, `tp`, `sl`, `external`, `type` FROM `%s` "
                 "WHERE `id` > %"PRIu64" ORDER BY `id` LIMIT %zu", table, last_id, query_limit);
         log_trace("exec sql: %s", sql);
         int ret = mysql_real_query(conn, sql, sdslen(sql));
@@ -124,6 +124,7 @@ int load_limits(MYSQL *conn, const char *table)
             order->tp = decimal(row[12], PREC_PRICE);
             order->sl = decimal(row[13], PREC_PRICE);
             order->external = strtoull(row[14], NULL, 0);
+            order->type = strtoull(row[15], NULL, 0);
 
             order->type = MARKET_ORDER_TYPE_LIMIT;
             order->update_time = 0;
@@ -813,7 +814,7 @@ invalid_argument:
 static int load_limit_order(json_t *params)
 {
     // 比开仓多了 create_time 参数
-    if (json_array_size(params) != 12)
+    if (json_array_size(params) != 13)
         return -__LINE__;
 
     // sid
@@ -854,58 +855,63 @@ static int load_limit_order(json_t *params)
     if (lot == NULL || mpd_cmp(lot, mpd_zero, &mpd_ctx) <= 0)
         goto invalid_argument;
 
-    // price
-    if (!json_is_string(json_array_get(params, 5)))
+    // type
+    if (!json_is_integer(json_array_get(params, 5)))
         return -__LINE__;
-    mpd_t *price = decimal(json_string_value(json_array_get(params, 5)), PREC_PRICE);
+    uint32_t type = json_integer_value(json_array_get(params, 5));
+
+    // price
+    if (!json_is_string(json_array_get(params, 6)))
+        return -__LINE__;
+    mpd_t *price = decimal(json_string_value(json_array_get(params, 6)), PREC_PRICE);
     if (price == NULL || mpd_cmp(price, mpd_zero, &mpd_ctx) <= 0)
         goto invalid_argument;
 
     // tp
-    if (!json_is_string(json_array_get(params, 6)))
+    if (!json_is_string(json_array_get(params, 7)))
         goto invalid_argument;
     mpd_t *tp = mpd_new(&mpd_ctx);
-    double dd = atof(json_string_value(json_array_get(params, 6)));
+    double dd = atof(json_string_value(json_array_get(params, 7)));
     if (dd == 0) {
         mpd_copy(tp, mpd_zero, &mpd_ctx);
     } else {
-        tp = decimal(json_string_value(json_array_get(params, 6)), PREC_PRICE);
+        tp = decimal(json_string_value(json_array_get(params, 7)), PREC_PRICE);
     }
     if (tp == NULL)
         goto invalid_argument;
 
     // sl
-    if (!json_is_string(json_array_get(params, 7)))
+    if (!json_is_string(json_array_get(params, 8)))
         goto invalid_argument;
     mpd_t *sl = mpd_new(&mpd_ctx);
-    dd = atof(json_string_value(json_array_get(params, 7)));
+    dd = atof(json_string_value(json_array_get(params, 8)));
     if (dd == 0) {
         mpd_copy(sl, mpd_zero, &mpd_ctx);
     } else {
-        sl = decimal(json_string_value(json_array_get(params, 7)), PREC_PRICE);
+        sl = decimal(json_string_value(json_array_get(params, 8)), PREC_PRICE);
     }
     if (sl == NULL)
         goto invalid_argument;
 
     // expire_time
-    if (!json_is_integer(json_array_get(params, 8)))
-        return -__LINE__;
-    uint64_t expire_time = json_integer_value(json_array_get(params, 8));
-
-    // external
     if (!json_is_integer(json_array_get(params, 9)))
         return -__LINE__;
-    uint64_t external = json_integer_value(json_array_get(params, 9));
+    uint64_t expire_time = json_integer_value(json_array_get(params, 9));
+
+    // external
+    if (!json_is_integer(json_array_get(params, 10)))
+        return -__LINE__;
+    uint64_t external = json_integer_value(json_array_get(params, 10));
 
     // comment
-    if (!json_is_string(json_array_get(params, 10)))
+    if (!json_is_string(json_array_get(params, 11)))
         goto invalid_argument;
-    const char *comment = json_string_value(json_array_get(params, 10));
+    const char *comment = json_string_value(json_array_get(params, 11));
 
     // create_time
-    if (!json_is_real(json_array_get(params, 11)))
+    if (!json_is_real(json_array_get(params, 12)))
         goto invalid_argument;
-    double create_time = json_real_value(json_array_get(params, 11));
+    double create_time = json_real_value(json_array_get(params, 12));
 
     // fee
     mpd_t *fee = mpd_new(&mpd_ctx);
@@ -920,7 +926,7 @@ static int load_limit_order(json_t *params)
         mpd_copy(swap, symbol_swap_short(group, symbol), &mpd_ctx);
     }
 
-    int ret = market_put_limit(false, NULL, market, sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, external, comment, create_time, expire_time);
+    int ret = market_put_limit(false, NULL, market, sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, external, comment, create_time, expire_time, type);
 
     mpd_del(price);
     mpd_del(lot);

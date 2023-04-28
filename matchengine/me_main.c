@@ -14,7 +14,8 @@
 # include "me_tick.h"
 # include "me_tpsl.h"
 # include "me_stop.h"
-//# include "me_limit.h"
+# include "me_limit.h"
+#include "me_expire.h"
 
 const char *__process__ = "matchengine";
 const char *__version__ = "0.1.0";
@@ -109,8 +110,8 @@ int main(int argc, char *argv[])
         error(EXIT_FAILURE, errno, "init trade fail: %d", ret);
     }
 
-    daemon(1, 1);
-    process_keepalive();
+   // daemon(1, 1);
+//    process_keepalive();
 
     ret = init_from_db();
     if (ret < 0) {
@@ -140,12 +141,17 @@ int main(int argc, char *argv[])
     if (ret < 0) {
         error(EXIT_FAILURE, errno, "init stop out fail: %d", ret);
     }
-/*
+
     ret = init_limit();
     if (ret < 0) {
         error(EXIT_FAILURE, errno, "init limit fail: %d", ret);
     }
-*/
+
+    ret =  init_expire();
+    if (ret < 0) {
+        error(EXIT_FAILURE, errno, "init expire fail: %d", ret);
+    }
+
     ret = init_swap();
     if (ret < 0) {
         error(EXIT_FAILURE, errno, "init swap fail: %d", ret);

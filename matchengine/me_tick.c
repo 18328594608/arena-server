@@ -288,7 +288,7 @@ static void on_message_fix(struct uwsc_client *cl, void *data, size_t len, bool 
 
                 append_tpsl(symbol);
                 append_stop_symbol(symbol);
-//                append_limit_symbol(symbol);
+                append_limit_symbol(symbol);
                 free(symbol);
             }
         } else {
@@ -308,7 +308,7 @@ static void on_message_fix(struct uwsc_client *cl, void *data, size_t len, bool 
 
             append_tpsl(symbol);
             append_stop_symbol(symbol);
-//            append_limit_symbol(symbol);
+            append_limit_symbol(symbol);
             free(symbol);
         }
 

@@ -1100,7 +1100,7 @@ invalid_argument:
 // order.limit (sid, group, symbol, side, lot, price, tp, sl, expire, external, comment)
 static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
 {
-    if (json_array_size(params) != 11)
+    if (json_array_size(params) != 12)
         return reply_error_invalid_argument(ses, pkg);
 
     // sid
@@ -1158,19 +1158,25 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     mpd_copy(bid, symbol_bid(symbol), &mpd_ctx);
     mpd_copy(ask, symbol_ask(symbol), &mpd_ctx);
 
+    // type
+    if (!json_is_integer(json_array_get(params, 5)))
+        return reply_error_invalid_argument(ses, pkg);
+    uint32_t type = json_integer_value(json_array_get(params, 5));
+
     // price
-    if (!json_is_string(json_array_get(params, 5)))
+    if (!json_is_string(json_array_get(params, 6)))
         goto invalid_argument;
-    dd = atof(json_string_value(json_array_get(params, 5)));
+    dd = atof(json_string_value(json_array_get(params, 6)));
     if (dd == 0)
         goto invalid_argument;
 
-    price = decimal(json_string_value(json_array_get(params, 5)), PREC_PRICE);
+    price = decimal(json_string_value(json_array_get(params, 6)), PREC_PRICE);
     if (price == NULL || mpd_cmp(price, mpd_zero, &mpd_ctx) < 0)
         goto invalid_argument;
 
     if (side == ORDER_SIDE_BUY) {
-        if (mpd_cmp(price, ask, &mpd_ctx) > 0) {
+        if ((mpd_cmp(price, ask, &mpd_ctx) > 0 && type == MARKET_ORDER_TYPE_LIMIT ) ||
+                (mpd_cmp(price, ask, &mpd_ctx) < 0 &&type == MARKET_ORDER_TYPE_BREAK)) {
             mpd_del(bid);
             mpd_del(ask);
             mpd_del(price);
@@ -1178,7 +1184,8 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
             return reply_error(ses, pkg, 19, "invalid price");
         }
     } else {
-        if (mpd_cmp(price, bid, &mpd_ctx) < 0) {
+        if ((mpd_cmp(price, bid, &mpd_ctx) < 0 && type == MARKET_ORDER_TYPE_LIMIT ) ||
+                (mpd_cmp(price, bid, &mpd_ctx) > 0 &&type == MARKET_ORDER_TYPE_BREAK)) {
             mpd_del(bid);
             mpd_del(ask);
             mpd_del(price);
@@ -1188,13 +1195,13 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     }
 
     // tp
-    if (!json_is_string(json_array_get(params, 6)))
+    if (!json_is_string(json_array_get(params, 7)))
         goto invalid_argument;
-    dd = atof(json_string_value(json_array_get(params, 6)));
+    dd = atof(json_string_value(json_array_get(params, 7)));
     if (dd == 0) {
         mpd_copy(tp, mpd_zero, &mpd_ctx);
     } else {
-        tp = decimal(json_string_value(json_array_get(params, 6)), PREC_PRICE);
+        tp = decimal(json_string_value(json_array_get(params, 7)), PREC_PRICE);
     }
     if (tp == NULL || mpd_cmp(tp, mpd_zero, &mpd_ctx) < 0)
         goto invalid_argument;
@@ -1237,19 +1244,20 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     }
 
     // expire_time
-    uint64_t expire_time = json_integer_value(json_array_get(params, 8));
+    uint64_t expire_time = json_integer_value(json_array_get(params, 9));
     if (expire_time > 0 && expire_time < current_timestamp())
         goto invalid_argument;
 
     // external
-    if (!json_is_integer(json_array_get(params, 9)))
+    if (!json_is_integer(json_array_get(params, 10)))
         return reply_error_invalid_argument(ses, pkg);
-    uint64_t external = json_integer_value(json_array_get(params, 9));
+    uint64_t external = json_integer_value(json_array_get(params, 10));
+
 
     // comment
-    if (!json_is_string(json_array_get(params, 10)))
+    if (!json_is_string(json_array_get(params, 11)))
         goto invalid_argument;
-    const char *comment = json_string_value(json_array_get(params, 10));
+    const char *comment = json_string_value(json_array_get(params, 11));
 
     // get symbol fee and swap
     mpd_copy(fee, symbol_fee(group, symbol), &mpd_ctx);
@@ -1262,7 +1270,7 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
 
     double create_time = current_timestamp();
     json_t *result = NULL;
-    int ret = market_put_limit(true, &result, market, sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, external, comment, create_time, expire_time);
+    int ret = market_put_limit(true, &result, market, sid, leverage, side, price, lot, tp, sl, symbol_percentage(group, symbol), fee, swap, external, comment, create_time, expire_time, type);
 
     if (ret == 0) {
         // 添加参数 create_time,系统重启时创建订单使用

@@ -3306,7 +3306,7 @@ int market_cancel(bool real, json_t **result, market_t *m, order_t *order, const
 }
 
 int market_put_limit(bool real, json_t **result, market_t *m, uint64_t sid, uint32_t leverage, uint32_t side, mpd_t *price, mpd_t *lot, mpd_t *tp,
-		mpd_t *sl, mpd_t *percentage, mpd_t *fee, mpd_t *swap, uint64_t external, const char *comment, double create_time, uint64_t expire_time)
+		mpd_t *sl, mpd_t *percentage, mpd_t *fee, mpd_t *swap, uint64_t external, const char *comment, double create_time, uint64_t expire_time, uint32_t type)
 {
     order_t *order = malloc(sizeof(order_t));
     if (order == NULL) {
@@ -3314,7 +3314,7 @@ int market_put_limit(bool real, json_t **result, market_t *m, uint64_t sid, uint
     }
 
     order->id           = ++order_id_start;
-    order->type         = MARKET_ORDER_TYPE_LIMIT;
+    order->type         = type;
     order->side         = side;
     order->create_time  = create_time;
     order->update_time  = 0;

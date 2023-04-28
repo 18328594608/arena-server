@@ -40,7 +40,8 @@ CREATE TABLE `slice_limit_example` (
     `fee`           DECIMAL(10,2) NOT NULL,
     `swap`          DECIMAL(10,4) NOT NULL,
     `tp`            DECIMAL(20,8) NOT NULL,
-    `sl`            DECIMAL(20,8) NOT NULL
+    `sl`            DECIMAL(20,8) NOT NULL,
+    `type`          BIGINT UNSIGNED NOT NULL COMMENT '0-market 1-limit  2-break',
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 CREATE TABLE `slice_history` (

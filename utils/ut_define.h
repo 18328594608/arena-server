@@ -3,6 +3,7 @@
 
 # define MARKET_ORDER_TYPE_MARKET   1
 # define MARKET_ORDER_TYPE_LIMIT    2
+# define MARKET_ORDER_TYPE_BREAK     3
 
 # define ORDER_SIDE_BUY             0
 # define ORDER_SIDE_SELL            1
