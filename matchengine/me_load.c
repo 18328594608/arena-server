@@ -126,7 +126,6 @@ int load_limits(MYSQL *conn, const char *table)
             order->external = strtoull(row[14], NULL, 0);
             order->type = strtoull(row[15], NULL, 0);
 
-            order->type = MARKET_ORDER_TYPE_LIMIT;
             order->update_time = 0;
             order->finish_time = 0;
             order->close_price = mpd_new(&mpd_ctx);

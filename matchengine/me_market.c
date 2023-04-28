@@ -3678,7 +3678,6 @@ log_info("## cur_margin3 = %s", mpd_to_sci(cur_margin, 0));
     // 挂单成交
     order_cancel(m, o, false);
 
-    o->type         = MARKET_ORDER_TYPE_LIMIT;
     o->update_time  = update_time;
     mpd_copy(o->price, price, &mpd_ctx);
     mpd_copy(o->margin, margin, &mpd_ctx);

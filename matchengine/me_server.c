@@ -1162,6 +1162,10 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     if (!json_is_integer(json_array_get(params, 5)))
         return reply_error_invalid_argument(ses, pkg);
     uint32_t type = json_integer_value(json_array_get(params, 5));
+    if(type != MARKET_ORDER_TYPE_LIMIT && type != MARKET_ORDER_TYPE_BREAK)
+    {
+        goto invalid_argument;
+    }
 
     // price
     if (!json_is_string(json_array_get(params, 6)))
