@@ -81,7 +81,16 @@ static void flush_list(void)
             {
                 break;
             }
-            else if (order->type == MARKET_ORDER_TYPE_BREAK && mpd_cmp(order->price, ask, &mpd_ctx) > 0)
+            log_info("## [buy limit] %"PRIu64" %s %"PRIu64" - %s at %s", order->sid, symbol, order->id, mpd_to_sci(order->price, 0),  mpd_to_sci(ask, 0));
+            int ret = limit_open(true, m, sym, order, order->sid, ask, order->fee, margin_ask_price, current_timestamp());
+            if (ret < 0) {
+                log_fatal("limit open fail: %d, order: %"PRIu64"", ret, order->id);
+            }
+        }
+
+        while ((node = skiplist_next(iter)) != NULL) {
+            order_t *order = node->value;
+            if (order->type == MARKET_ORDER_TYPE_BREAK && mpd_cmp(order->price, ask, &mpd_ctx) > 0)
             {
                 break;
             }
@@ -102,7 +111,16 @@ static void flush_list(void)
             {
                 break;
             }
-            else if (order->type == MARKET_ORDER_TYPE_BREAK && mpd_cmp(order->price, bid, &mpd_ctx) < 0)
+
+            log_info("## [sell limit] %"PRIu64" %s %"PRIu64" - %s at %s", order->sid, symbol, order->id, mpd_to_sci(order->price, 0),  mpd_to_sci(bid, 0));
+            int ret = limit_open(true, m, sym, order, order->sid, bid, order->fee, margin_bid_price, current_timestamp());
+            if (ret < 0) {
+                log_fatal("limit open fail: %d, order: %"PRIu64"", ret, order->id);
+            }
+        }
+        while ((node = skiplist_next(iter)) != NULL) {
+            order_t *order = node->value;
+            if (order->type == MARKET_ORDER_TYPE_BREAK && mpd_cmp(order->price, bid, &mpd_ctx) < 0)
             {
                 break;
             }
