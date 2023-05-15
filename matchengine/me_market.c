@@ -3218,14 +3218,34 @@ static int limit_put(market_t *m, order_t *order)
         if (dict_add(m->limit_users, &sid_key, order_list) == NULL)
             return -__LINE__;
     }
+    if (order->type == MARKET_ORDER_TYPE_LIMIT)
+    {
+        if (order->side == ORDER_SIDE_BUY) {
+            if (skiplist_insert(m->limit_buys, order) == NULL)
+                return -__LINE__;
+        } else {
+            if (skiplist_insert(m->limit_sells, order) == NULL)
+                return -__LINE__;
+        }
+    }
+    else if (order->type == MARKET_ORDER_TYPE_BREAK)
+    {
+        if (order->side == ORDER_SIDE_BUY) {
+            if (skiplist_insert(m->limit_sells, order) == NULL)
+                return -__LINE__;
+        } else {
+            if (skiplist_insert(m->limit_buys, order) == NULL)
+                return -__LINE__;
+        }
+    }
 
-    if (order->side == ORDER_SIDE_BUY) {
+   /* if (order->side == ORDER_SIDE_BUY) {
         if (skiplist_insert(m->limit_buys, order) == NULL)
             return -__LINE__;
     } else {
         if (skiplist_insert(m->limit_sells, order) == NULL)
             return -__LINE__;
-    }
+    }*/
 
     if (order->expire_time > 0) {
         if (skiplist_insert(expire_orders, order) == NULL)

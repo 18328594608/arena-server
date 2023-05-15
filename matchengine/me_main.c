@@ -110,8 +110,8 @@ int main(int argc, char *argv[])
         error(EXIT_FAILURE, errno, "init trade fail: %d", ret);
     }
 
-    daemon(1, 1);
-    process_keepalive();
+    //daemon(1, 1);
+    //process_keepalive();
 
     ret = init_from_db();
     if (ret < 0) {
