@@ -2,6 +2,7 @@
 # include "me_market.h"
 # include "me_symbol.h"
 # include "me_balance.h"
+#include "me_trade.h"
 
 static nw_timer timer;
 static int flag = 0;
