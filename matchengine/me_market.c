@@ -3601,15 +3601,7 @@ log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
         if (floa)
             mpd_copy(pnl, floa, &mpd_ctx);
     }
-    if (pnl)
-    {
-        int i = 1;
-    }
 
-    if(mpd_cmp(pnl, mpd_zero, &mpd_ctx) > 0)
-    {
-        int i = 1;
-    }
     if (pnl && mpd_cmp(pnl, mpd_zero, &mpd_ctx) > 0) {
         mpd_t *total = mpd_new(&mpd_ctx);
         if (action == 0) {
