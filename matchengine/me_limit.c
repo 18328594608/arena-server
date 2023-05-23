@@ -76,6 +76,7 @@ static void flush_list(void)
         skiplist_iter *iter = skiplist_get_iterator(m->limit_buys);
         while ((node = skiplist_next(iter)) != NULL) {
             order_t *order = node->value;
+            mpd_t *price = mpd_new(&mpd_ctx);
 
             if (order->type == MARKET_ORDER_TYPE_LIMIT && mpd_cmp(order->price, ask, &mpd_ctx) < 0)
             {
@@ -87,8 +88,17 @@ static void flush_list(void)
                 break;
             }
 
+            if (order->type == MARKET_ORDER_TYPE_LIMIT)
+            {
+                mpd_copy(price, ask, &mpd_ctx);
+            }
+            else if (order->type == MARKET_ORDER_TYPE_BREAK)
+            {
+                mpd_copy(price, bid, &mpd_ctx);
+            }
+
             log_info("## [buy limit] %"PRIu64" %s %"PRIu64" - %s at %s", order->sid, symbol, order->id, mpd_to_sci(order->price, 0),  mpd_to_sci(ask, 0));
-            int ret = limit_open(true, m, sym, order, order->sid, ask, order->fee, margin_ask_price, current_timestamp());
+            int ret = limit_open(true, m, sym, order, order->sid, price, order->fee, margin_ask_price, current_timestamp());
             if (ret < 0) {
                 log_fatal("limit open fail: %d, order: %"PRIu64"", ret, order->id);
             }
@@ -109,8 +119,18 @@ static void flush_list(void)
                 break;
             }
 
+            mpd_t *price = mpd_new(&mpd_ctx);
+            if (order->type == MARKET_ORDER_TYPE_LIMIT)
+            {
+                mpd_copy(price, bid, &mpd_ctx);
+            }
+            else if (order->type == MARKET_ORDER_TYPE_BREAK)
+            {
+                mpd_copy(price, ask, &mpd_ctx);
+            }
+
             log_info("## [sell limit] %"PRIu64" %s %"PRIu64" - %s at %s", order->sid, symbol, order->id, mpd_to_sci(order->price, 0),  mpd_to_sci(bid, 0));
-            int ret = limit_open(true, m, sym, order, order->sid, bid, order->fee, margin_bid_price, current_timestamp());
+            int ret = limit_open(true, m, sym, order, order->sid, price, order->fee, margin_bid_price, current_timestamp());
             if (ret < 0) {
                 log_fatal("limit open fail: %d, order: %"PRIu64"", ret, order->id);
             }

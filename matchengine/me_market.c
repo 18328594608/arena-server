@@ -3267,15 +3267,32 @@ order_t *market_get_limit(market_t *m, uint64_t order_id)
 
 static int order_cancel(market_t *m, order_t *order, bool free)
 {
-    if (order->side == ORDER_SIDE_SELL) {
-        skiplist_node *node = skiplist_find(m->limit_sells, order);
-        if (node) {
-            skiplist_delete(m->limit_sells, node);
+    if (order->type == MARKET_ORDER_TYPE_LIMIT)
+    {
+        if (order->side == ORDER_SIDE_SELL) {
+            skiplist_node *node = skiplist_find(m->limit_sells, order);
+            if (node) {
+                skiplist_delete(m->limit_sells, node);
+            }
+        } else {
+            skiplist_node *node = skiplist_find(m->limit_buys, order);
+            if (node) {
+                skiplist_delete(m->limit_buys, node);
+            }
         }
-    } else {
-        skiplist_node *node = skiplist_find(m->limit_buys, order);
-        if (node) {
-            skiplist_delete(m->limit_buys, node);
+    }
+    else if (order->type == MARKET_ORDER_TYPE_BREAK)
+    {
+        if (order->side == ORDER_SIDE_SELL) {
+            skiplist_node *node = skiplist_find(m->limit_buys, order);
+            if (node) {
+                skiplist_delete(m->limit_buys, node);
+            }
+        } else {
+            skiplist_node *node = skiplist_find(m->limit_sells, order);
+            if (node) {
+                skiplist_delete(m->limit_sells, node);
+            }
         }
     }
 
@@ -3575,6 +3592,7 @@ log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
     mpd_t *free = balance_get_v2(sid, BALANCE_TYPE_FREE);
     mpd_t *floa = balance_get_v2(sid, BALANCE_TYPE_FLOAT);
     mpd_t *pnl = mpd_new(&mpd_ctx);
+    mpd_copy(pnl, mpd_zero, &mpd_ctx);
     if (free) {
         mpd_copy(pnl, free, &mpd_ctx);
         if (floa)
@@ -3582,6 +3600,15 @@ log_info("## update_margin = %s", mpd_to_sci(update_margin, 0));
     } else {
         if (floa)
             mpd_copy(pnl, floa, &mpd_ctx);
+    }
+    if (pnl)
+    {
+        int i = 1;
+    }
+
+    if(mpd_cmp(pnl, mpd_zero, &mpd_ctx) > 0)
+    {
+        int i = 1;
     }
     if (pnl && mpd_cmp(pnl, mpd_zero, &mpd_ctx) > 0) {
         mpd_t *total = mpd_new(&mpd_ctx);
