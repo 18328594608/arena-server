@@ -3,6 +3,7 @@
 # include "me_balance.h"
 # include "me_dump.h"
 # include "me_tick.h"
+#include "me_trade.h"
 
 static nw_timer timer;
 static time_t last_swap_time;
