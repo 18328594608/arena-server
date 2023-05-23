@@ -1223,13 +1223,13 @@ static int on_cmd_order_limit(nw_ses *ses, rpc_pkg *pkg, json_t *params)
     }
 
     // sl
-    if (!json_is_string(json_array_get(params, 7)))
+    if (!json_is_string(json_array_get(params, 8)))
         goto invalid_argument;
-    dd = atof(json_string_value(json_array_get(params, 7)));
+    dd = atof(json_string_value(json_array_get(params, 8)));
     if (dd == 0) {
         mpd_copy(sl, mpd_zero, &mpd_ctx);
     } else {
-        sl = decimal(json_string_value(json_array_get(params, 7)), PREC_PRICE);
+        sl = decimal(json_string_value(json_array_get(params, 8)), PREC_PRICE);
     }
     if (sl == NULL || mpd_cmp(sl, mpd_zero, &mpd_ctx) < 0)
         goto invalid_argument;
