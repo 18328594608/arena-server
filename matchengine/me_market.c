@@ -2288,6 +2288,7 @@ int market_open_hedged(bool real, json_t **result, market_t *m, symbol_t *sym, u
     mpd_t *free = balance_get_v2(sid, BALANCE_TYPE_FREE);
     mpd_t *floa = balance_get_v2(sid, BALANCE_TYPE_FLOAT);
     mpd_t *pnl = mpd_new(&mpd_ctx);
+    mpd_copy(pnl, mpd_zero, &mpd_ctx);
     if (free) {
         mpd_copy(pnl, free, &mpd_ctx);
         if (floa)
