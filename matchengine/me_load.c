@@ -1383,7 +1383,7 @@ static int load_order_change_external(json_t *params)
     }
 
     json_t *result = NULL;
-    int ret = change_order_external(true, &result, market, order, external_new);
+    int ret = change_order_external(false, NULL, market, order, external_new);
 
     if (ret < 0) {
         log_fatal("market_update fail: %d", ret);

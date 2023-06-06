@@ -2762,7 +2762,7 @@ static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg)
         log_trace("from: %s cmd order change external, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
         ret = on_cmd_order_change_external(ses, pkg, params);
         if (ret < 0) {
-            log_error("on_cmd_order_cancel_external %s fail: %d", params_str, ret);
+            log_error("on_cmd_order_change_external %s fail: %d", params_str, ret);
         }
         break;
     case CMD_ORDER_PENDING:
