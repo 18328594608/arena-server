@@ -1997,6 +1997,20 @@ int market_update(bool real, json_t **result, market_t *m, order_t *order, mpd_t
     return 0;
 }
 
+int change_order_external(bool real, json_t **result, market_t *m, order_t *order, uint64_t external)
+{
+    if( order->external != external)
+    {
+        order->external = external;
+    }
+    if (real) {
+        push_order_message_v2(ORDER_EVENT_UPDATE, order);
+        *result = get_order_info_v2(order);
+    }
+    return 0;
+
+}
+
 static void append_stop_out_log(order_t *order)
 {
     json_t *params = json_array();

@@ -1709,6 +1709,63 @@ static int on_cmd_order_cancel_external(nw_ses *ses, rpc_pkg *pkg, json_t *param
     return ret;
 }
 
+static int on_cmd_order_change_external(nw_ses *ses, rpc_pkg *pkg, json_t *params)
+{
+    if (json_array_size(params) != 5)
+        return reply_error_invalid_argument(ses, pkg);
+
+    // sid
+    if (!json_is_integer(json_array_get(params, 0)))
+        return reply_error_invalid_argument(ses, pkg);
+    uint64_t sid = json_integer_value(json_array_get(params, 0));
+
+    // symbol
+    if (!json_is_string(json_array_get(params, 1)))
+        return reply_error_invalid_argument(ses, pkg);
+    const char *symbol = json_string_value(json_array_get(params, 1));
+    market_t *market = get_market(symbol);
+    if (market == NULL)
+        return reply_error_invalid_argument(ses, pkg);
+
+    // external
+    if (!json_is_integer(json_array_get(params, 2)))
+        return reply_error_invalid_argument(ses, pkg);
+    uint64_t external = json_integer_value(json_array_get(params, 2));
+
+
+    // external_new
+    if (!json_is_integer(json_array_get(params, 3)))
+        return reply_error_invalid_argument(ses, pkg);
+    uint64_t external_new = json_integer_value(json_array_get(params, 3));
+
+
+    // comment
+    if (!json_is_string(json_array_get(params, 4)))
+        return reply_error_invalid_argument(ses, pkg);
+    const char *comment = json_string_value(json_array_get(params, 4));
+
+    order_t *order = market_get_external_order(market, sid, external);
+    if (order == NULL) {
+        return reply_error(ses, pkg, 10, "order not found");
+    }
+    if (order->sid != sid) {
+        return reply_error(ses, pkg, 11, "user not match");
+    }
+
+    json_t *result = NULL;
+    int ret = change_order_external(true, &result, market, order, external_new);
+
+    if (ret < 0) {
+        log_fatal("market_update fail: %d", ret);
+        return reply_error_internal_error(ses, pkg);
+    }
+
+    append_operlog("change_order_external", params);
+    ret = reply_result(ses, pkg, result);
+    json_decref(result);
+    return ret;
+}
+
 static int on_cmd_balance_query(nw_ses *ses, rpc_pkg *pkg, json_t *params)
 {
     size_t request_size = json_array_size(params);
@@ -2693,6 +2750,19 @@ static void svr_on_recv_pkg(nw_ses *ses, rpc_pkg *pkg)
         ret = on_cmd_order_limit(ses, pkg, params);
         if (ret < 0) {
             log_error("on_cmd_order_limit %s fail: %d", params_str, ret);
+        }
+        break;
+    case CMD_CHANGE_EXTERNAL:
+        if (is_operlog_block() || is_history_block() || is_message_block()) {
+            log_fatal("service unavailable, operlog: %d, history: %d, message: %d",
+                      is_operlog_block(), is_history_block(), is_message_block());
+            reply_error_service_unavailable(ses, pkg);
+            goto cleanup;
+        }
+        log_trace("from: %s cmd order change external, sequence: %u params: %s", nw_sock_human_addr(&ses->peer_addr), pkg->sequence, params_str);
+        ret = on_cmd_order_change_external(ses, pkg, params);
+        if (ret < 0) {
+            log_error("on_cmd_order_cancel_external %s fail: %d", params_str, ret);
         }
         break;
     case CMD_ORDER_PENDING:

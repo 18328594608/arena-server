@@ -83,6 +83,7 @@ int market_put_position(market_t *m, order_t *order);
 int market_close(bool real, json_t **result, market_t *m, symbol_t *sym, uint64_t sid, order_t *order, mpd_t *price, const char *comment, mpd_t *profit_price, double finish_time);
 int market_tpsl(bool real, market_t *m, symbol_t *sym, uint64_t sid, order_t *order, mpd_t *price, const char *comment, mpd_t *profit_price, double finish_time);
 int market_update(bool real, json_t **result, market_t *m, order_t *order, mpd_t *tp, mpd_t *sl);
+int change_order_external(bool real, json_t **result, market_t *m, order_t *order, uint64_t external);
 int market_stop_out(bool real, market_t *m, uint64_t sid, order_t *order, const char *comment, double finish_time);
 
 int market_open_hedged(bool real, json_t **result, market_t *m, symbol_t *sym, uint64_t sid, uint32_t leverage, uint32_t side, mpd_t *price, mpd_t *lot,

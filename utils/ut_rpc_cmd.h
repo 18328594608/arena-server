@@ -30,9 +30,12 @@
 # define CMD_ORDER_PENDING          217
 # define CMD_ORDER_HISTORY          218
 
+//EXTERNAL USE
 # define CMD_ORDER_CLOSE_EXTERNAL   220
 # define CMD_ORDER_UPDATE_EXTERNAL  221
 # define CMD_ORDER_CANCEL_EXTERNAL  222
+# define CMD_CHANGE_EXTERNAL        223
+
 # define CMD_ORDER_OPEN2            230
 # define CMD_ORDER_CLOSE2           231
 

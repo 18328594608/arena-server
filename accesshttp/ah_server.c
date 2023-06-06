@@ -272,6 +272,8 @@ static int init_methods_handler(void)
     ERR_RET_LN(add_handler("order.close_external", matchengine, CMD_ORDER_CLOSE_EXTERNAL));
     ERR_RET_LN(add_handler("order.update_external", matchengine, CMD_ORDER_UPDATE_EXTERNAL));
     ERR_RET_LN(add_handler("order.cancel_external", matchengine, CMD_ORDER_CANCEL_EXTERNAL));
+    ERR_RET_LN(add_handler("order.change_external", matchengine, CMD_CHANGE_EXTERNAL));
+
     ERR_RET_LN(add_handler("order.open2", matchengine, CMD_ORDER_OPEN2));
     ERR_RET_LN(add_handler("order.close2", matchengine, CMD_ORDER_CLOSE2));
 

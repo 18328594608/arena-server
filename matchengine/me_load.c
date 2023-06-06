@@ -1336,6 +1336,63 @@ invalid_argument:
     return -__LINE__;
 }
 
+static int load_order_change_external(json_t *params)
+{
+    if (json_array_size(params) != 5)
+        return -__LINE__;
+
+    // sid
+    if (!json_is_integer(json_array_get(params, 0)))
+        return -__LINE__;
+    uint64_t sid = json_integer_value(json_array_get(params, 0));
+
+    // symbol
+    if (!json_is_string(json_array_get(params, 1)))
+        return -__LINE__;
+    const char *symbol = json_string_value(json_array_get(params, 1));
+    market_t *market = get_market(symbol);
+    if (market == NULL)
+        return -__LINE__;
+
+    // external
+    if (!json_is_integer(json_array_get(params, 2)))
+        return -__LINE__;
+
+    uint64_t external = json_integer_value(json_array_get(params, 2));
+
+
+    // external_new
+    if (!json_is_integer(json_array_get(params, 3)))
+        return -__LINE__;
+
+    uint64_t external_new = json_integer_value(json_array_get(params, 3));
+
+
+    // comment
+    if (!json_is_string(json_array_get(params, 4)))
+        return -__LINE__;
+
+    const char *comment = json_string_value(json_array_get(params, 4));
+
+    order_t *order = market_get_external_order(market, sid, external);
+    if (order == NULL) {
+        return -__LINE__;
+    }
+    if (order->sid != sid) {
+        return -__LINE__;
+    }
+
+    json_t *result = NULL;
+    int ret = change_order_external(true, &result, market, order, external_new);
+
+    if (ret < 0) {
+        log_fatal("market_update fail: %d", ret);
+        return -__LINE__;
+    }
+    return ret;
+}
+
+
 /*
 static int load_limit_order(json_t *params)
 {
@@ -1585,7 +1642,10 @@ static int load_oper(json_t *detail)
     } else if (strcmp(method, "cancel_order") == 0) {
         ret = load_cancel_order(params);
 */
-    } else {
+    }else if (strcmp(method, "change_order_external") == 0) {
+        ret = load_order_change_external(params);
+    }
+    else {
         return -__LINE__;
     }
 
